@@ -6,16 +6,16 @@ use App\Http\Helpers\ResponseModel;
 use App\Models\User;
 use Illuminate\Http\Request;
 
-class ManagerUserController extends Controller
+class AdminUserController extends Controller
 {
     public function index() 
     {
-        $managers = User::where('active_flag', 1)->where('role_id', 2)->latest()->get();
+        $admins = User::where('active_flag', 1)->where('role_id', 1)->latest()->get();
 
         $response = new ResponseModel(
             'success',
             0,
-            $managers
+            $admins
         );
 
         return response()->json($response, 200);
@@ -33,7 +33,7 @@ class ManagerUserController extends Controller
             ]);
 
             // Create the employee record
-            $manager = User::create([
+            $admin = User::create([
                 'first_name' => $data['first_name'],
                 'last_name' => $data['last_name'],
                 'email' => $data['email'],
@@ -69,8 +69,8 @@ class ManagerUserController extends Controller
                 'description' => 'nullable'
             ]);
 
-            $manager = User::findOrFail($data['id']);
-            if ($manager->name !== $data['name'] && User::where('name', $data['name'])->count() > 0) {
+            $admin = User::findOrFail($data['id']);
+            if ($admin->name !== $data['name'] && User::where('name', $data['name'])->count() > 0) {
                 $response = new ResponseModel(
                     'Name Already Exist',
                     1,
@@ -81,7 +81,7 @@ class ManagerUserController extends Controller
             } else {
 
                 // Update the employee record
-                $manager->update([
+                $admin->update([
                     'name' => $data['name'],
                     'description' => $data['description'],
                 ]);
@@ -108,9 +108,9 @@ class ManagerUserController extends Controller
     public function delete($id)
     {
         try {
-            $manager = User::findOrFail($id);
-            $manager->active_flag = 0;
-            $manager->update();
+            $admin = User::findOrFail($id);
+            $admin->active_flag = 0;
+            $admin->update();
 
             return response()->json([
                 'status' => 0,
@@ -120,7 +120,7 @@ class ManagerUserController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 1,
-                'message' => 'Failed to delete manager: ' . $e->getMessage(),
+                'message' => 'Failed to delete admin: ' . $e->getMessage(),
                 'data' => null
             ], 500);
         }

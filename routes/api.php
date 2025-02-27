@@ -2,8 +2,12 @@
 
 use App\Http\Controllers\AccountRegisterController;
 use App\Http\Controllers\AdminAuthController;
+use App\Http\Controllers\AdminUserController;
+use App\Http\Controllers\CoordinatorUserController;
 use App\Http\Controllers\FacultyController;
+use App\Http\Controllers\GuestUserController;
 use App\Http\Controllers\ManagerUserController;
+use App\Http\Controllers\StudentUserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -19,7 +23,15 @@ Route::middleware(['auth:sanctum'])->group(function() {
 
     //User Management
 
-    //User Register End
+    //Admin User Management
+
+    Route::get('/admin/admin-users', [AdminUserController::class, 'index']);
+
+    Route::post('/admin/admin-users/create', [AdminUserController::class, 'store']);
+
+    Route::post('/admin/admin-users/edit', [AdminUserController::class, 'update']);
+
+    Route::post('/admin/admin-users/{id}/delete', [AdminUserController::class, 'delete']);
 
     //Manager User Management
 
@@ -30,6 +42,36 @@ Route::middleware(['auth:sanctum'])->group(function() {
     Route::post('/admin/manager-users/edit', [ManagerUserController::class, 'update']);
 
     Route::post('/admin/manager-users/{id}/delete', [ManagerUserController::class, 'delete']);
+
+    //Coordinator User Management
+
+    Route::get('/admin/coordinator-users', [CoordinatorUserController::class, 'index']);
+
+    Route::post('/admin/coordinator-users/create', [CoordinatorUserController::class, 'store']);
+
+    Route::post('/admin/coordinator-users/edit', [CoordinatorUserController::class, 'update']);
+
+    Route::post('/admin/coordinator-users/{id}/delete', [CoordinatorUserController::class, 'delete']);
+
+    //Student User Management
+
+    Route::get('/admin/student-users', [StudentUserController::class, 'index']);
+
+    Route::post('/admin/student-users/create', [StudentUserController::class, 'store']);
+
+    Route::post('/admin/student-users/edit', [StudentUserController::class, 'update']);
+
+    Route::post('/admin/student-users/{id}/delete', [StudentUserController::class, 'delete']);
+
+    //Guest User Management
+
+    Route::get('/admin/guest-users', [GuestUserController::class, 'index']);
+
+    Route::post('/admin/guest-users/create', [GuestUserController::class, 'store']);
+
+    Route::post('/admin/guest-users/edit', [GuestUserController::class, 'update']);
+
+    Route::post('/admin/guest-users/{id}/delete', [GuestUserController::class, 'delete']);
 
     //Faculty Management
 
