@@ -3,12 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Http\Helpers\ResponseModel;
+use App\Mail\UserRegisteredMail;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 
 class CoordinatorUserController extends Controller
 {
-    public function index() 
+    public function index()
     {
         $coordinators = User::where('active_flag', 1)->where('role_id', 3)->with(['faculty:id,name'])->latest()->get();
 
@@ -33,7 +35,6 @@ class CoordinatorUserController extends Controller
                 'password' => 'nullable|string|max:16|min:8',
             ]);
 
-            // Create the employee record
             $coordinator = User::create([
                 'first_name' => $data['first_name'],
                 'last_name' => $data['last_name'],
@@ -43,7 +44,8 @@ class CoordinatorUserController extends Controller
                 'role_id' => 3,
             ]);
 
-            // Prepare the response
+            Mail::to($coordinator->email)->send(new UserRegisteredMail($coordinator, $data['password']));
+
             $response = new ResponseModel(
                 'success',
                 0,
@@ -66,15 +68,18 @@ class CoordinatorUserController extends Controller
         try {
             // Validate the request
             $data = $request->validate([
-                'id' => 'required|exists:faculties,id',
-                'name' => 'required|string|max:20|min:3',
-                'description' => 'nullable'
+                'id' => 'required',
+                'first_name' => 'required',
+                'last_name' => 'required',
+                'faculty_id' => 'required|integer|exists:faculties,id',
+                'email' => 'required|string|max:100|min:3',
+                'password' => 'nullable|string|max:16|min:8',
             ]);
 
             $coordinator = User::findOrFail($data['id']);
-            if ($coordinator->name !== $data['name'] && User::where('name', $data['name'])->count() > 0) {
+            if ($coordinator->email !== $data['email'] && User::where('email', $data['email'])->count() > 0) {
                 $response = new ResponseModel(
-                    'Name Already Exist',
+                    'Email Already Exist',
                     1,
                     null
                 );
@@ -82,13 +87,20 @@ class CoordinatorUserController extends Controller
                 return response()->json($response, 200);
             } else {
 
-                // Update the employee record
-                $coordinator->update([
-                    'name' => $data['name'],
-                    'description' => $data['description'],
-                ]);
+                $updated = [
+                    'first_name' => $data['first_name'],
+                    'last_name' => $data['last_name'],
+                    'email' => $data['email'],
+                    'faculty_id' => $data['faculty_id'],
+                    'role_id' => 3,
+                ];
 
-                // Prepare the response
+                if (!empty($data['password'])) {
+                    $updated['password'] = bcrypt($data['password']);
+                }
+
+                $coordinator->update($updated);
+
                 $response = new ResponseModel(
                     'success',
                     0,

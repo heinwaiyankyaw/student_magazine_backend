@@ -40,7 +40,10 @@ class AdminAuthController extends Controller
             }
             if ($user->role_id == 2) {
                 $role = "manager";
-            }  
+            } 
+            if ($user->role_id == 3) {
+                $role = "coordinator";
+            }   
             $response = new ResponseModel(
                 'Login successful',
                 0,

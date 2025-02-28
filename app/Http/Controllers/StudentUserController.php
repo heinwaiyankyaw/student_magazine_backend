@@ -8,9 +8,9 @@ use Illuminate\Http\Request;
 
 class StudentUserController extends Controller
 {
-    public function index() 
+    public function index()
     {
-        $students = User::where('active_flag', 1)->where('role_id', 4)->latest()->get();
+        $students = User::where('active_flag', 1)->where('role_id', 4)->with(['faculty:id,name'])->latest()->get();
 
         $response = new ResponseModel(
             'success',
@@ -28,20 +28,22 @@ class StudentUserController extends Controller
             $data = $request->validate([
                 'first_name' => 'required',
                 'last_name' => 'required',
+                'faculty_id' => 'required|integer|exists:faculties,id',
                 'email' => 'required|string|max:100|min:3|unique:users,email',
                 'password' => 'nullable|string|max:16|min:8',
             ]);
 
-            // Create the employee record
             $student = User::create([
                 'first_name' => $data['first_name'],
                 'last_name' => $data['last_name'],
                 'email' => $data['email'],
                 'password' => bcrypt($data['password']),
-                'role_id' => 2,
+                'faculty_id' => $data['faculty_id'],
+                'role_id' => 4,
             ]);
 
-            // Prepare the response
+            // Mail::to($student->email)->send(new UserRegisteredMail($student));
+
             $response = new ResponseModel(
                 'success',
                 0,
@@ -64,15 +66,18 @@ class StudentUserController extends Controller
         try {
             // Validate the request
             $data = $request->validate([
-                'id' => 'required|exists:faculties,id',
-                'name' => 'required|string|max:20|min:3',
-                'description' => 'nullable'
+                'id' => 'required',
+                'first_name' => 'required',
+                'last_name' => 'required',
+                'faculty_id' => 'required|integer|exists:faculties,id',
+                'email' => 'required|string|max:100|min:3',
+                'password' => 'nullable|string|max:16|min:8',
             ]);
 
             $student = User::findOrFail($data['id']);
-            if ($student->name !== $data['name'] && User::where('name', $data['name'])->count() > 0) {
+            if ($student->email !== $data['email'] && User::where('email', $data['email'])->count() > 0) {
                 $response = new ResponseModel(
-                    'Name Already Exist',
+                    'Email Already Exist',
                     1,
                     null
                 );
@@ -80,13 +85,20 @@ class StudentUserController extends Controller
                 return response()->json($response, 200);
             } else {
 
-                // Update the employee record
-                $student->update([
-                    'name' => $data['name'],
-                    'description' => $data['description'],
-                ]);
+                $updated = [
+                    'first_name' => $data['first_name'],
+                    'last_name' => $data['last_name'],
+                    'email' => $data['email'],
+                    'faculty_id' => $data['faculty_id'],
+                    'role_id' => 4,
+                ];
 
-                // Prepare the response
+                if (!empty($data['password'])) {
+                    $updated['password'] = bcrypt($data['password']);
+                }
+
+                $student->update($updated);
+
                 $response = new ResponseModel(
                     'success',
                     0,
