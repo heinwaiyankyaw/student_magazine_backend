@@ -17,6 +17,10 @@ return new class extends Migration
             $table->foreignId('notification_id')->constrained('notifications')->onDelete('cascade');
             $table->boolean('is_read')->default(false);
             $table->timestamps();
+            $table->unsignedBigInteger('createby');
+            $table->unsignedBigInteger('updateby')->nullable();
+            $table->foreign('createby')->references('id')->on('users')->onDelete('cascade');
+            $table->foreign('updateby')->references('id')->on('users')->onDelete('cascade');
         });
     }
 

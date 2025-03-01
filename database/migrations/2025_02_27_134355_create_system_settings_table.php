@@ -18,6 +18,10 @@ return new class extends Migration
             $table->date('final_closure_date');
             $table->boolean('active_flag')->default(true);
             $table->timestamps();
+            $table->unsignedBigInteger('createby');
+            $table->unsignedBigInteger('updateby')->nullable();
+            $table->foreign('createby')->references('id')->on('users')->onDelete('cascade');
+            $table->foreign('updateby')->references('id')->on('users')->onDelete('cascade');
         });
     }
 

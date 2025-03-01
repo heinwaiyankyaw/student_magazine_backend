@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
+            $table->string('profile')->nullable();
             $table->string('first_name');
             $table->string('last_name');
             $table->string('email')->unique();
@@ -20,13 +21,19 @@ return new class extends Migration
             $table->unsignedBigInteger('faculty_id')->nullable();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->boolean('is_password_change')->default(false);
+            $table->timestamp('last_login_at')->nullable();
+            $table->string('last_login_ip')->nullable();
+            $table->boolean('is_suspended')->default(false);
             $table->boolean('active_flag')->default(true);
             $table->rememberToken();
             $table->timestamps();
-
+            $table->unsignedBigInteger('createby')->nullable();
+            $table->unsignedBigInteger('updateby')->nullable();
+            $table->foreign('createby')->references('id')->on('users')->onDelete('cascade');
+            $table->foreign('updateby')->references('id')->on('users')->onDelete('cascade');
             $table->foreign('role_id')->references('id')->on('roles')->onDelete('cascade');
             $table->foreign('faculty_id')->references('id')->on('faculties')->onDelete('cascade');
-
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {

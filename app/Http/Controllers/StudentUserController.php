@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Http\Helpers\ResponseModel;
+use App\Mail\UserRegisteredMail;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 
 class StudentUserController extends Controller
 {
@@ -42,8 +44,8 @@ class StudentUserController extends Controller
                 'role_id' => 4,
             ]);
 
-            // Mail::to($student->email)->send(new UserRegisteredMail($student));
-
+            Mail::to($student->email)->send(new UserRegisteredMail($student, $data['password']));
+            
             $response = new ResponseModel(
                 'success',
                 0,
