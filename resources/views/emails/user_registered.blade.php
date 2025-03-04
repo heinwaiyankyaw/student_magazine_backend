@@ -63,7 +63,7 @@
             display: inline-block;
             padding: 12px 20px;
             background-color:rgb(79, 114, 240);
-            color: white;
+            color: black;
             text-align: center;
             font-size: 16px;
             text-decoration: none;
@@ -75,7 +75,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h2>Welcome to AnnualUniversity Magazine</h2>
+            <h3>Welcome to ContributeX University Magazine</h3>
         </div>
         
         <div class="content">
@@ -85,12 +85,12 @@
 
             <p class="note">Note: After logging in with the above email and password, please make sure to change your password to something more secure.</p>
 
-            <a href="http://localhost:5174/auth/login" class="button">Login Account</a>
+            <a href="https://yatharyone-admin.netlify.app/" class="button">Login Account</a>
         </div>
 
         <div class="footer">
-            <h3>Thank you, AnnualUniversity Magazine</h3>
-            <p>© 2025 AnnualUniversity Magazine. All Rights Reserved.</p>
+            <h3>Thank you, ContributeX University Magazine</h3>
+            <p>© 2025 ContributeX. All Rights Reserved.</p>
         </div>
     </div>
 </body>
