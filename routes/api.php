@@ -3,6 +3,7 @@
 use App\Http\Controllers\AccountRegisterController;
 use App\Http\Controllers\AdminAuthController;
 use App\Http\Controllers\AdminUserController;
+use App\Http\Controllers\ContributionController;
 use App\Http\Controllers\CoordinatorUserController;
 use App\Http\Controllers\FacultyController;
 use App\Http\Controllers\GuestUserController;
@@ -86,6 +87,12 @@ Route::middleware(['auth:sanctum'])->group(function() {
     //Faculty Management End
 
     //Admin Route End
+
+    //Coordinator Route
+
+    Route::get('/coordinator/contributions', [ContributionController::class, 'getContributionsByFacultyID']);
+
+    //Coordinator Route End
 });
 
 Route::post('/auth/login', [AdminAuthController::class, 'login']);
