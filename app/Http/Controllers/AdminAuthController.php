@@ -35,27 +35,36 @@ class AdminAuthController extends Controller
 
             $token = $user->createToken('user-token', ['user'])->plainTextToken;
 
-            if ($user->role_id == 1) {
-                $role = "admin";
-            }
-            if ($user->role_id == 2) {
-                $role = "manager";
-            } 
-            if ($user->role_id == 3) {
-                $role = "coordinator";
-            }   
+            $userDetails = [
+                'id' => $user->id,
+                'first_name' => $user->first_name,
+                'last_name' => $user->last_name,
+                'email' => $user->email,
+                'profile' => $user->profile,
+                'is_password_change' => $user->is_password_change,
+                'last_login_at' => $user->last_login_at,
+                'last_login_ip' => $user->last_login_ip,
+                'role_id' => $user->role_id,
+                'faculty_id' => $user->faculty_id,
+                'role_name' => optional($user->role)->name ?? "Unknown Role",
+                'faculty_name' => optional($user->faculty)->name ?? null,
+            ];
+
+            $roles = [
+                1 => "admin",
+                2 => "manager",
+                3 => "coordinator",
+                4 => "student",
+                5 => "guest"
+            ];
+
             $response = new ResponseModel(
                 'Login successful',
                 0,
                 [
-                    'user' => [
-                        'id' => $user->id,
-                        'name' => $user->name,
-                        'email' => $user->email,
-                    ],
+                    'user' => $userDetails,
                     'token' => $token,
-                    'role' => $role
-
+                    'role' => $roles[$user->role_id] ?? "unknown"
                 ]
             );
 

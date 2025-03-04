@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Helpers\PasswordGenerator;
 use App\Http\Helpers\ResponseModel;
+use App\Mail\UserRegisteredMail;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 
 class ManagerUserController extends Controller
 {
@@ -29,17 +32,20 @@ class ManagerUserController extends Controller
                 'first_name' => 'required',
                 'last_name' => 'required',
                 'email' => 'required|string|max:100|min:3|unique:users,email',
-                'password' => 'nullable|string|max:16|min:8',
             ]);
+
+            $generatedPassword = PasswordGenerator::generatePassword();
 
             // Create the employee record
             $manager = User::create([
                 'first_name' => $data['first_name'],
                 'last_name' => $data['last_name'],
                 'email' => $data['email'],
-                'password' => bcrypt($data['password']),
+                'password' => bcrypt($generatedPassword),
                 'role_id' => 2,
             ]);
+
+            Mail::to($manager->email)->send(new UserRegisteredMail($manager, $generatedPassword));
 
             // Prepare the response
             $response = new ResponseModel(
