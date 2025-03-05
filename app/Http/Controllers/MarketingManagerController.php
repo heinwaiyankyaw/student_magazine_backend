@@ -36,18 +36,18 @@ class MarketingManagerController extends Controller
 
             // ResponseModel to return to the view
             $response = new ResponseModel(
-                (new Messages())->success, // message
-                true,                      // status
-                $data                      // data
+                (new Messages())->success,
+                true,
+                $data
             );
 
             return response()->json($response);
         } catch (\Exception $e) {
             // In case of an error, return a failure response
             $response = new ResponseModel(
-                (new Messages())->fail,   // message
-                false,                     // status
-                null                        // no data in case of failure
+                (new Messages())->fail,
+                false,
+                null
             );
 
             return response()->json($response, 500); // Internal server error
@@ -57,11 +57,11 @@ class MarketingManagerController extends Controller
     // View all approved contributions
     public function viewContributions(Request $request) {
         try {
-            // Get filter criteria from the request (optional)
+            // Get filter criteria from the request
             $studentName = $request->input('student_name', null);
             $date = $request->input('date', null);
 
-            // Query approved contributions, filter by student name or date if provided
+            // Query approved contributions, filter by student name or date
             $query = Contribution::where('status', 'approved');
 
             if ($studentName) {
@@ -79,32 +79,32 @@ class MarketingManagerController extends Controller
             // If no contributions found, return a fail response
             if ($contributions->isEmpty()) {
                 $response = new ResponseModel(
-                    'No contributions found.',  // message
-                    false,                      // status
-                    null                        // no data in case of failure
+                    'No contributions found.',
+                    false,
+                    null
                 );
                 return response()->json($response);
             }
 
-            // Prepare the data for the response
+
             $data = $contributions;
 
-            // Return the response with data
+
             $response = new ResponseModel(
-                (new Messages())->success,  // message
-                true,                       // status
-                $data                       // data
+                (new Messages())->success,
+                true,
+                $data
             );
 
             return response()->json($response);
         } catch (\Exception $e) {
-            // Handle exceptions and return error response
+
             $response = new ResponseModel(
-                (new Messages())->fail,  // message
-                false,                   // status
-                null                     // no data in case of failure
+                (new Messages())->fail,
+                false,
+                null
             );
-            return response()->json($response, 500); // Internal server error
+            return response()->json($response, 500);
         }
     }
 
@@ -117,9 +117,9 @@ class MarketingManagerController extends Controller
             if (empty($selectedContributions)) {
                 // Return error if no contributions selected
                 $response = new ResponseModel(
-                    'No contributions selected.',  // message
-                    false,                         // status
-                    null                           // no data in case of failure
+                    'No contributions selected.',
+                    false,
+                    null
                 );
                 return response()->json($response);
             }
@@ -130,9 +130,9 @@ class MarketingManagerController extends Controller
             if ($contributions->isEmpty()) {
                 // Return error if no contributions are found for the selected IDs
                 $response = new ResponseModel(
-                    'No valid contributions found.',  // message
-                    false,                            // status
-                    null                              // no data in case of failure
+                    'No valid contributions found.',
+                    false,
+                    null
                 );
                 return response()->json($response);
             }
@@ -145,7 +145,7 @@ class MarketingManagerController extends Controller
 
             // Add each contribution file to the temporary directory
             foreach ($contributions as $contribution) {
-                $fileName = $contribution->article_filename; // Assuming the article is saved with this filename
+                $fileName = $contribution->article_filename;
                 $filePath = storage_path('app/public/articles/' . $fileName);
 
                 // Copy the file to the temporary directory
@@ -153,7 +153,6 @@ class MarketingManagerController extends Controller
                     copy($filePath, $tempDir . $fileName);
                 }
 
-                // If there are associated images, add them as well
                 if ($contribution->image_filename) {
                     $imagePath = storage_path('app/public/images/' . $contribution->image_filename);
                     if (file_exists($imagePath)) {
@@ -177,13 +176,12 @@ class MarketingManagerController extends Controller
             // Return the ZIP file for download
             return response()->download($zipPath)->deleteFileAfterSend(true);
         } catch (\Exception $e) {
-            // Handle exceptions and return error response
             $response = new ResponseModel(
-                (new Messages())->fail,  // message
-                false,                   // status
-                null                     // no data in case of failure
+                (new Messages())->fail,
+                false,
+                null
             );
-            return response()->json($response, 500); // Internal server error
+            return response()->json($response, 500);
         }
     }
 
@@ -221,20 +219,19 @@ class MarketingManagerController extends Controller
 
             // Return response with statistics data
             $response = new ResponseModel(
-                (new Messages())->success,  // message
-                true,                       // status
-                $data                       // statistics data
+                (new Messages())->success,
+                true,
+                $data
             );
 
             return response()->json($response);
         } catch (\Exception $e) {
-            // Handle exceptions and return error response
             $response = new ResponseModel(
-                (new Messages())->fail,  // message
-                false,                   // status
-                null                     // no data in case of failure
+                (new Messages())->fail,
+                false,
+                null
             );
-            return response()->json($response, 500); // Internal server error
+            return response()->json($response, 500);
         }
     }
 }
