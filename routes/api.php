@@ -9,6 +9,7 @@ use App\Http\Controllers\FacultyController;
 use App\Http\Controllers\GuestUserController;
 use App\Http\Controllers\ManagerUserController;
 use App\Http\Controllers\StudentUserController;
+use App\Http\Controllers\MarketingManagerController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -93,6 +94,19 @@ Route::middleware(['auth:sanctum'])->group(function() {
     Route::get('/coordinator/contributions', [ContributionController::class, 'getContributionsByFacultyID']);
 
     //Coordinator Route End
+
+    // Marketing Manager Routes
+
+    // Marketing Manager Dashboard
+    Route::get('/marketing-manager/dashboard', [MarketingManagerController::class, 'dashboard']);
+
+    // Download Contributions as ZIP
+    Route::post('/marketing-manager/download-zip', [MarketingManagerController::class, 'downloadZip']);
+
+    // Statistics and Reports
+    Route::get('/marketing-manager/statistics-reports', [MarketingManagerController::class, 'statisticsAndReports']);
+
+    // Marketing Manager Routes End
 });
 
 Route::post('/auth/login', [AdminAuthController::class, 'login']);
