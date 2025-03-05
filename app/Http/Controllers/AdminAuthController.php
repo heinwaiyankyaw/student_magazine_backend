@@ -75,7 +75,75 @@ class AdminAuthController extends Controller
                 2,
                 null
             );
-            return response()->json($response, 500);
+            return response()->json($response);
+        }
+    }
+
+    public function passwordUpdate(Request $request)
+    {
+        try {
+            // Validate request data
+            $data = $request->validate([
+                'user_id' => 'required|exists:users,id',
+                'old_password' => 'required|string|min:8',
+                'new_password' => 'required|string|min:8',
+                'confirm_password' => 'required|string|same:new_password',
+                'updateby' => 'required|exists:users,id'
+            ], [
+                'old_password.required' => 'Old password is required.',
+                'new_password.required' => 'New password is required.',
+                'new_password.min' => 'New password must be at least 6 characters.',
+                'confirm_password.required' => 'Confirm password is required.',
+                'confirm_password.same' => 'Confirm password must match the new password.',
+                'updateby.required' => 'User ID is required.',
+                'updateby.exists' => 'User not found.'
+            ]);
+    
+
+            // Get user by ID
+            $user = User::find($data['user_id']);
+
+            if (!$user) {
+                $response = new ResponseModel(
+                    'User not found.',
+                    1,
+                    null
+                );
+
+                return response()->json($response, 200);
+            }
+
+            // Check if old password is correct
+            if (!Hash::check($data['old_password'], $user->password)) {
+                $response = new ResponseModel(
+                    'Old password is incorrect.',
+                    1,
+                    null
+                );
+
+                return response()->json($response, 200);
+            }
+
+            // Update password
+            $user->update([
+                'is_password_change' => true,
+                'password' => bcrypt($data['new_password']),
+            ]);
+
+            $response = new ResponseModel(
+                'success',
+                0,
+                null
+            );
+
+            return response()->json($response, 200);
+        } catch (\Exception $e) {
+            $response = new ResponseModel(
+                $e->getMessage(),
+                2,
+                null
+            );
+            return response()->json($response);
         }
     }
 }

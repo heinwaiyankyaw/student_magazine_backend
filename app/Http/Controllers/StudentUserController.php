@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Helpers\PasswordGenerator;
 use App\Http\Helpers\ResponseModel;
 use App\Mail\UserRegisteredMail;
 use App\Models\User;
@@ -32,19 +33,20 @@ class StudentUserController extends Controller
                 'last_name' => 'required',
                 'faculty_id' => 'required|integer|exists:faculties,id',
                 'email' => 'required|string|max:100|min:3|unique:users,email',
-                'password' => 'nullable|string|max:16|min:8',
             ]);
+
+            $generatedPassword = PasswordGenerator::generatePassword();
 
             $student = User::create([
                 'first_name' => $data['first_name'],
                 'last_name' => $data['last_name'],
                 'email' => $data['email'],
-                'password' => bcrypt($data['password']),
+                'password' => bcrypt($generatedPassword),
                 'faculty_id' => $data['faculty_id'],
                 'role_id' => 4,
             ]);
 
-            Mail::to($student->email)->send(new UserRegisteredMail($student, $data['password']));
+            Mail::to($student->email)->send(new UserRegisteredMail($student, $generatedPassword));
             
             $response = new ResponseModel(
                 'success',
@@ -73,7 +75,6 @@ class StudentUserController extends Controller
                 'last_name' => 'required',
                 'faculty_id' => 'required|integer|exists:faculties,id',
                 'email' => 'required|string|max:100|min:3',
-                'password' => 'nullable|string|max:16|min:8',
             ]);
 
             $student = User::findOrFail($data['id']);
@@ -94,10 +95,6 @@ class StudentUserController extends Controller
                     'faculty_id' => $data['faculty_id'],
                     'role_id' => 4,
                 ];
-
-                if (!empty($data['password'])) {
-                    $updated['password'] = bcrypt($data['password']);
-                }
 
                 $student->update($updated);
 
