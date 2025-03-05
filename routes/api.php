@@ -94,6 +94,7 @@ Route::middleware(['auth:sanctum'])->group(function() {
     Route::get('/coordinator/contributions', [ContributionController::class, 'getContributionsByFacultyID']);
 
     //Coordinator Route End
+
     // Marketing Manager Routes
 
     // Marketing Manager Dashboard
@@ -104,6 +105,8 @@ Route::middleware(['auth:sanctum'])->group(function() {
 
     // Statistics and Reports
     Route::get('/marketing-manager/statistics-reports', [MarketingManagerController::class, 'statisticsAndReports']);
+
+    // Marketing Manager Routes End
 });
 
 Route::post('/auth/login', [AdminAuthController::class, 'login']);
