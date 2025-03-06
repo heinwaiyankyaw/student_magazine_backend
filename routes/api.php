@@ -4,6 +4,7 @@ use App\Http\Controllers\AccountRegisterController;
 use App\Http\Controllers\AdminAuthController;
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\ContributionController;
+use App\Http\Controllers\CoordinatorController;
 use App\Http\Controllers\CoordinatorUserController;
 use App\Http\Controllers\FacultyController;
 use App\Http\Controllers\GuestUserController;
@@ -91,7 +92,14 @@ Route::middleware(['auth:sanctum'])->group(function() {
 
     //Coordinator Route
 
+    //View Faculty Contribution
     Route::get('/coordinator/contributions', [ContributionController::class, 'getContributionsByFacultyID']);
+
+    //Select Contribution
+    Route::get('/coordinator/select', [CoordinatorController::class, 'selectContribution']);
+
+    //Review Contribution
+    Route::get('/coordinator/review', [CoordinatorController::class, 'reviewContribution']);
 
     //Coordinator Route End
 
