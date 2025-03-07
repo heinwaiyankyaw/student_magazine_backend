@@ -11,6 +11,7 @@ use App\Http\Controllers\GuestUserController;
 use App\Http\Controllers\ManagerUserController;
 use App\Http\Controllers\StudentUserController;
 use App\Http\Controllers\MarketingManagerController;
+use App\Http\Controllers\SystemSettingController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -76,6 +77,8 @@ Route::middleware(['auth:sanctum'])->group(function() {
 
     Route::post('/admin/guest-users/{id}/delete', [GuestUserController::class, 'delete']);
 
+    //User Management End
+
     //Faculty Management
 
     Route::get('/admin/faculties', [FacultyController::class, 'index']);
@@ -87,6 +90,14 @@ Route::middleware(['auth:sanctum'])->group(function() {
     Route::post('/admin/faculties/{id}/delete', [FacultyController::class, 'delete']);
 
     //Faculty Management End
+
+    //System Setting
+
+    Route::get('/admin/setting', [SystemSettingController::class, 'index']);
+
+    Route::post('/admin/setting/edit', [SystemSettingController::class, 'update']);
+
+    //System Setting End
 
     //Admin Route End
 
