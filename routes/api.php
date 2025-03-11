@@ -126,6 +126,14 @@ Route::middleware(['auth:sanctum'])->group(function() {
     Route::get('/marketing-manager/statistics-reports', [MarketingManagerController::class, 'statisticsAndReports']);
 
     // Marketing Manager Routes End
+
+    // Student Route
+
+    Route::post('/student/uploadArticle', [ContributionController::class, 'uploadArticle']);
+
+    Route::get('/student/contributions', [ContributionController::class, 'getContributionsByStudentID']);
+
+    // Student Route End
 });
 
 Route::post('/auth/login', [AdminAuthController::class, 'login']);

@@ -15,8 +15,8 @@ return new class extends Migration
             $table->id();
             $table->string('title');
             $table->text('description');
-            $table->string('file_path');
-            $table->string('image_path');
+            $table->string('article_path');
+            $table->json('image_paths')->nullable;
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('faculty_id')->constrained('faculties')->onDelete('cascade');
             $table->enum('status', ['pending', 'reviewed', 'selected', 'rejected'])->default('pending');
