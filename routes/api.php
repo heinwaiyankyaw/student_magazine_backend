@@ -12,6 +12,8 @@ use App\Http\Controllers\ManagerUserController;
 use App\Http\Controllers\StudentUserController;
 use App\Http\Controllers\MarketingManagerController;
 use App\Http\Controllers\SystemSettingController;
+use App\Http\Controllers\TransactionLogController;
+use App\Models\TransactionLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -90,6 +92,10 @@ Route::middleware(['auth:sanctum'])->group(function() {
     Route::post('/admin/faculties/{id}/delete', [FacultyController::class, 'delete']);
 
     //Faculty Management End
+
+    //Log Management
+
+    Route::get('/admin/logs', [TransactionLogController::class, 'index']);
 
     //System Setting
 

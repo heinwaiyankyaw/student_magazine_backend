@@ -13,7 +13,15 @@ return new class extends Migration
     {
         Schema::create('transaction_logs', function (Blueprint $table) {
             $table->id();
+            $table->string('table_name');
+            $table->string('action_type');
+            $table->unsignedBigInteger('user_id');
+            $table->ipAddress('ip_address')->nullable();
+            $table->string('user_agent')->nullable();
+            $table->boolean('success')->default(true);
+            $table->text('message')->nullable();
             $table->timestamps();
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
         });
     }
 

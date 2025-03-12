@@ -3,41 +3,56 @@
 namespace App\Http\Controllers;
 
 use App\Http\Helpers\ResponseModel;
+use App\Http\Helpers\TransactionLogger;
 use Illuminate\Http\Request;
 use App\Models\Faculty;
-
+use Illuminate\Support\Facades\Log;
 
 class FacultyController extends Controller
 {
-    public function index() 
+    public function index()
     {
-        $items = Faculty::where('active_flag', 1)->latest()->get();
+        try {
+            $items = Faculty::where('active_flag', 1)->latest()->get();
 
-        $response = new ResponseModel(
-            'success',
-            0,
-            $items
-        );
+            //TransactionLogger::log('faculties', 'fetch', true, 'Fetched active faculties');
 
-        return response()->json($response, 200);
+            $response = new ResponseModel(
+                'success',
+                0,
+                $items
+            );
+
+            return response()->json($response, 200);
+        } catch (\Exception $e) {
+
+            //TransactionLogger::log('faculties', 'fetch', false, $e->getMessage());
+
+            $response = new ResponseModel(
+                $e->getMessage(),
+                2,
+                $items
+            );
+
+            return response()->json($response);
+        }
     }
 
     public function store(Request $request)
     {
         try {
-            // Validate the request
             $data = $request->validate([
                 'name' => 'required|string|max:100|min:3|unique:faculties,name',
                 'description' => 'nullable'
             ]);
 
-            // Create the employee record
             $item = Faculty::create([
                 'name' => $data['name'],
                 'description' => $data['description'],
             ]);
 
-            // Prepare the response
+            TransactionLogger::log('faculties', 'create', true, "Create new faculty '{$item->name}'");
+
             $response = new ResponseModel(
                 'success',
                 0,
@@ -46,12 +61,15 @@ class FacultyController extends Controller
 
             return response()->json($response, 200);
         } catch (\Exception $e) {
+
+            TransactionLogger::log('faculties', 'create', false, $e->getMessage());
+
             $response = new ResponseModel(
                 $e->getMessage(),
                 2,
                 null
             );
-            return response()->json($response, 500);
+            return response()->json($response);
         }
     }
 
@@ -97,7 +115,7 @@ class FacultyController extends Controller
                 2,
                 null
             );
-            return response()->json($response, 500);
+            return response()->json($response);
         }
     }
 
@@ -118,7 +136,7 @@ class FacultyController extends Controller
                 'status' => 1,
                 'message' => 'Failed to delete item: ' . $e->getMessage(),
                 'data' => null
-            ], 500);
+            ]);
         }
     }
 }

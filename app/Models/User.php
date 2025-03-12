@@ -67,4 +67,11 @@ class User extends Authenticatable
     {
         return $this->belongsTo(Role::class, 'role_id');
     }
+
+    public function logs()
+    {
+        return $this->hasMany(TransactionLog::class, 'user_id');
+    }
+
+
 }
