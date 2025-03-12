@@ -47,7 +47,7 @@ class StudentUserController extends Controller
             ]);
 
             Mail::to($student->email)->send(new UserRegisteredMail($student, $generatedPassword));
-            
+
             $response = new ResponseModel(
                 'success',
                 0,
@@ -136,4 +136,122 @@ class StudentUserController extends Controller
             ], 500);
         }
     }
+
+    public function editArticle(Request $request, $articleId)
+    {
+    try {
+        $data = $request->validate([
+            'title' => 'required|string|max:255',
+            'content' => 'required|string',
+            'closure_date' => 'required|date',
+        ]);
+
+        // Fetch article to check closure date
+        $article = Article::findOrFail($articleId);
+
+        // Ensure the closure date is not passed
+        if (strtotime($article->closure_date) < strtotime(now())) {
+            return response()->json([
+                'status' => 1,
+                'message' => 'Article editing is closed after the closure date.',
+                'data' => null,
+            ], 400);
+        }
+
+        // Update the article
+        $article->update([
+            'title' => $data['title'],
+            'content' => $data['content'],
+            'closure_date' => $data['closure_date'],
+        ]);
+
+        return response()->json([
+            'status' => 0,
+            'message' => 'Article edited successfully.',
+            'data' => $article,
+        ], 200);
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => 1,
+            'message' => 'Error: ' . $e->getMessage(),
+            'data' => null,
+        ], 500);
+    }
+    }
+    // Method to get all comments for an article
+    public function viewComments($articleId)
+    {
+        try {
+            $article = Article::findOrFail($articleId);
+            $comments = $article->comments;  // assuming Article has a relationship to comments
+
+            return response()->json([
+                'status' => 0,
+                'message' => 'Comments fetched successfully.',
+                'data' => $comments,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 1,
+                'message' => 'Error: ' . $e->getMessage(),
+                'data' => null,
+            ], 500);
+        }
+    }
+
+        // Method to allow student to reply to a comment
+        public function respondToComment(Request $request, $articleId, $commentId)
+        {
+            try {
+                $data = $request->validate([
+                    'response' => 'required|string',
+                ]);
+
+                $comment = Comment::findOrFail($commentId);
+                $comment->responses()->create([
+                    'user_id' => auth()->user()->id,  // Assuming the user is logged in
+                    'response' => $data['response'],
+                ]);
+
+                return response()->json([
+                    'status' => 0,
+                    'message' => 'Response submitted successfully.',
+                    'data' => null,
+                ], 200);
+            } catch (\Exception $e) {
+                return response()->json([
+                    'status' => 1,
+                    'message' => 'Error: ' . $e->getMessage(),
+                    'data' => null,
+                ], 500);
+            }
+        }
+
+        public function dashboard()
+        {
+            try {
+                // Assuming the student has a user ID and related articles
+                $contributions = Contribution::where('user_id', auth()->user()->id)->get();
+                $comments = Comment::where('user_id', auth()->user()->id)->get();
+
+                $data = [
+                    'contributions' => $contributions,
+                    'comments' => $comments,
+                ];
+
+                return response()->json([
+                    'status' => 0,
+                    'message' => 'Dashboard data fetched successfully.',
+                    'data' => $data,
+                ], 200);
+            } catch (\Exception $e) {
+                return response()->json([
+                    'status' => 1,
+                    'message' => 'Error: ' . $e->getMessage(),
+                    'data' => null,
+                ], 500);
+            }
+        }
+
+
 }
