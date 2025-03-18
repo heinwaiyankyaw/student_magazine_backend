@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Contribution;
 use App\Http\Helpers\ResponseModel;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class CoordinatorController extends Controller
 {
@@ -76,5 +78,23 @@ class CoordinatorController extends Controller
             );
             return response()->json($response, 500);
         }
+    }
+
+    public function getGuestByFacultyID(){
+        $user = Auth::user();
+
+        // Get guests from this faculty
+        $guests = User::where('active_flag', 1)
+                    ->where('role_id', 5)
+                    ->where('faculty_id', $user->faculty_id)
+                    ->latest()->get();
+
+        // Prepare response
+        $response = new ResponseModel(
+            'success',
+            0,
+            $guests);
+
+        return response()->json($response, 200);
     }
 }

@@ -112,11 +112,14 @@ Route::middleware(['auth:sanctum'])->group(function() {
     //View Faculty Contribution
     Route::get('/coordinator/contributions', [ContributionController::class, 'getContributionsByFacultyID']);
 
+    //View Faculty Guest
+    Route::get('/coordinator/guests', [CoordinatorController::class, 'getGuestByFacultyID']);
+
     //Select Contribution
-    Route::get('/coordinator/select', [CoordinatorController::class, 'selectContribution']);
+    Route::post('/coordinator/select', [CoordinatorController::class, 'selectContribution']);
 
     //Review Contribution
-    Route::get('/coordinator/review', [CoordinatorController::class, 'reviewContribution']);
+    Route::post('/coordinator/review', [CoordinatorController::class, 'reviewContribution']);
 
     //Coordinator Route End
 
