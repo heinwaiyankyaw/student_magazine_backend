@@ -73,5 +73,9 @@ class User extends Authenticatable
         return $this->hasMany(TransactionLog::class, 'user_id');
     }
 
+    public function notifications()
+    {
+        return $this->belongsToMany(Notification::class, 'user_notification');
+    }
 
 }

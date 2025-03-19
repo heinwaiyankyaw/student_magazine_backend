@@ -10,4 +10,10 @@ class Role extends Model
     {
         return $this->hasMany(User::class, 'role_id');
     }
+
+    public function notifications()
+    {
+        return $this->belongsToMany(Notification::class, 'role_notification');
+    }
+
 }
