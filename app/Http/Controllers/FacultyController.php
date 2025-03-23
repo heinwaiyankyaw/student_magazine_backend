@@ -91,6 +91,8 @@ class FacultyController extends Controller
                     null
                 );
 
+                TransactionLogger::log('faculties', 'update', false, 'Faculty Name Already Exist');
+
                 return response()->json($response, 200);
             } else {
 
@@ -100,6 +102,7 @@ class FacultyController extends Controller
                     'description' => $data['description'],
                 ]);
 
+                TransactionLogger::log('faculties', 'update', true, "Update faculty '{$item->name}'");
                 // Prepare the response
                 $response = new ResponseModel(
                     'success',
@@ -110,6 +113,7 @@ class FacultyController extends Controller
                 return response()->json($response, 200);
             }
         } catch (\Exception $e) {
+            TransactionLogger::log('faculties', 'update', false, $e->getMessage());
             $response = new ResponseModel(
                 $e->getMessage(),
                 2,
@@ -125,13 +129,14 @@ class FacultyController extends Controller
             $item = Faculty::findOrFail($id);
             $item->active_flag = 0;
             $item->update();
-
+            TransactionLogger::log('faculties', 'delete', true, "Delete faculty '{$item->name}'");
             return response()->json([
                 'status' => 0,
                 'message' => 'Faculty deleted successfully.',
                 'data' => null
             ], 200);
         } catch (\Exception $e) {
+            TransactionLogger::log('faculties', 'delete', false, $e->getMessage());
             return response()->json([
                 'status' => 1,
                 'message' => 'Failed to delete item: ' . $e->getMessage(),

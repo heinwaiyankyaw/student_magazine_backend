@@ -60,7 +60,7 @@ class CoordinatorController extends Controller
                 2,
                 null
             );
-            return response()->json($response, 500);
+            return response()->json($response);
         }
 
     }
@@ -113,7 +113,7 @@ class CoordinatorController extends Controller
                 2,
                 null
             );
-            return response()->json($response, 500);
+            return response()->json($response);
         }
     }
 

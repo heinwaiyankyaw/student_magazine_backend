@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Helpers\ResponseModel;
+use App\Http\Helpers\TransactionLogger;
 use App\Models\User;
 use Illuminate\Http\Request;
 
@@ -41,6 +42,8 @@ class AdminUserController extends Controller
                 'role_id' => 2,
             ]);
 
+            TransactionLogger::log('users', 'create', true, "Register New Admin '{$admin->email}'");
+
             // Prepare the response
             $response = new ResponseModel(
                 'success',
@@ -50,12 +53,13 @@ class AdminUserController extends Controller
 
             return response()->json($response, 200);
         } catch (\Exception $e) {
+            TransactionLogger::log('users', 'create', false, $e->getMessage());
             $response = new ResponseModel(
                 $e->getMessage(),
                 2,
                 null
             );
-            return response()->json($response, 500);
+            return response()->json($response);
         }
     }
 
@@ -101,7 +105,7 @@ class AdminUserController extends Controller
                 2,
                 null
             );
-            return response()->json($response, 500);
+            return response()->json($response);
         }
     }
 
@@ -122,7 +126,7 @@ class AdminUserController extends Controller
                 'status' => 1,
                 'message' => 'Failed to delete admin: ' . $e->getMessage(),
                 'data' => null
-            ], 500);
+            ]);
         }
     }
 }

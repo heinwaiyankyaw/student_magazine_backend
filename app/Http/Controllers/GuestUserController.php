@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Http\Helpers\ResponseModel;
+use App\Http\Helpers\TransactionLogger;
 use App\Mail\UserRegisteredMail;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Auth;
 
 class GuestUserController extends Controller
 {
@@ -44,6 +46,8 @@ class GuestUserController extends Controller
                 'role_id' => 5,
             ]);
 
+            TransactionLogger::log('users', 'create', true, "Register New Guest '{$guest->email}'");
+            
             Mail::to($guest->email)->send(new UserRegisteredMail($guest, $data['password']));
 
             $response = new ResponseModel(
@@ -54,12 +58,13 @@ class GuestUserController extends Controller
 
             return response()->json($response, 200);
         } catch (\Exception $e) {
+            TransactionLogger::log('users', 'create', false, $e->getMessage());
             $response = new ResponseModel(
                 $e->getMessage(),
                 2,
                 null
             );
-            return response()->json($response, 500);
+            return response()->json($response);
         }
     }
 
@@ -83,7 +88,7 @@ class GuestUserController extends Controller
                     1,
                     null
                 );
-
+                TransactionLogger::log('users', 'update', false, 'Email Already Exist');
                 return response()->json($response, 200);
             } else {
 
@@ -100,7 +105,7 @@ class GuestUserController extends Controller
                 }
 
                 $guest->update($updated);
-
+                TransactionLogger::log('users', 'update', true, "Update Guest '{$guest->email}'");
                 $response = new ResponseModel(
                     'success',
                     0,
@@ -110,12 +115,13 @@ class GuestUserController extends Controller
                 return response()->json($response, 200);
             }
         } catch (\Exception $e) {
+            TransactionLogger::log('users', 'update', false, $e->getMessage());
             $response = new ResponseModel(
                 $e->getMessage(),
                 2,
                 null
             );
-            return response()->json($response, 500);
+            return response()->json($response);
         }
     }
 
@@ -124,19 +130,21 @@ class GuestUserController extends Controller
         try {
             $guest = User::findOrFail($id);
             $guest->active_flag = 0;
+            $guest->updateby = Auth::id();
             $guest->update();
-
+            TransactionLogger::log('users', 'delete', true, "Delete Guest '{$guest->email}'");
             return response()->json([
                 'status' => 0,
                 'message' => 'User deleted successfully.',
                 'data' => null
             ], 200);
         } catch (\Exception $e) {
+            TransactionLogger::log('users', 'delete', false, $e->getMessage());
             return response()->json([
                 'status' => 1,
                 'message' => 'Failed to delete guest: ' . $e->getMessage(),
                 'data' => null
-            ], 500);
+            ]);
         }
     }
 }

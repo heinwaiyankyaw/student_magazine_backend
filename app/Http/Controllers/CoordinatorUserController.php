@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Http\Helpers\PasswordGenerator;
 use App\Http\Helpers\ResponseModel;
+use App\Http\Helpers\TransactionLogger;
 use App\Mail\UserRegisteredMail;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Auth;
 
 class CoordinatorUserController extends Controller
 {
@@ -46,6 +48,8 @@ class CoordinatorUserController extends Controller
                 'role_id' => 3,
             ]);
 
+            TransactionLogger::log('users', 'create', true, "Register New Coordinator '{$coordinator->email}'");
+
             Mail::to($coordinator->email)->send(new UserRegisteredMail($coordinator, $generatedPassword));
 
             $response = new ResponseModel(
@@ -56,12 +60,13 @@ class CoordinatorUserController extends Controller
 
             return response()->json($response, 200);
         } catch (\Exception $e) {
+            TransactionLogger::log('users', 'create', false, $e->getMessage());
             $response = new ResponseModel(
                 $e->getMessage(),
                 2,
                 null
             );
-            return response()->json($response, 500);
+            return response()->json($response);
         }
     }
 
@@ -84,7 +89,7 @@ class CoordinatorUserController extends Controller
                     1,
                     null
                 );
-
+                TransactionLogger::log('users', 'update', false, 'Email Already Exist');
                 return response()->json($response, 200);
             } else {
 
@@ -98,6 +103,7 @@ class CoordinatorUserController extends Controller
 
                 $coordinator->update($updated);
 
+                TransactionLogger::log('users', 'update', true, "Update Coordinator '{$coordinator->email}'");
                 $response = new ResponseModel(
                     'success',
                     0,
@@ -107,12 +113,13 @@ class CoordinatorUserController extends Controller
                 return response()->json($response, 200);
             }
         } catch (\Exception $e) {
+            TransactionLogger::log('users', 'update', false, $e->getMessage());
             $response = new ResponseModel(
                 $e->getMessage(),
                 2,
                 null
             );
-            return response()->json($response, 500);
+            return response()->json($response);
         }
     }
 
@@ -121,19 +128,21 @@ class CoordinatorUserController extends Controller
         try {
             $coordinator = User::findOrFail($id);
             $coordinator->active_flag = 0;
+            $coordinator->updateby = Auth::id();
             $coordinator->update();
-
+            TransactionLogger::log('users', 'delete', true, "Delete Coordinator '{$coordinator->email}'");
             return response()->json([
                 'status' => 0,
                 'message' => 'User deleted successfully.',
                 'data' => null
             ], 200);
         } catch (\Exception $e) {
+            TransactionLogger::log('users', 'delete', false, $e->getMessage());
             return response()->json([
                 'status' => 1,
                 'message' => 'Failed to delete coordinator: ' . $e->getMessage(),
                 'data' => null
-            ], 500);
+            ]);
         }
     }
 }

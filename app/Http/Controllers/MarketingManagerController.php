@@ -50,7 +50,7 @@ class MarketingManagerController extends Controller
                 null
             );
 
-            return response()->json($response, 500); // Internal server error
+            return response()->json($response); // Internal server error
         }
     }
 
@@ -104,7 +104,7 @@ class MarketingManagerController extends Controller
                 false,
                 null
             );
-            return response()->json($response, 500);
+            return response()->json($response);
         }
     }
 
@@ -181,7 +181,7 @@ class MarketingManagerController extends Controller
                 false,
                 null
             );
-            return response()->json($response, 500);
+            return response()->json($response);
         }
     }
 
@@ -231,7 +231,7 @@ class MarketingManagerController extends Controller
                 false,
                 null
             );
-            return response()->json($response, 500);
+            return response()->json($response);
         }
     }
 }

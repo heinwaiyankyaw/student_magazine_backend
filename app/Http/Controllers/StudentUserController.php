@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Http\Helpers\PasswordGenerator;
 use App\Http\Helpers\ResponseModel;
+use App\Http\Helpers\TransactionLogger;
 use App\Mail\UserRegisteredMail;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Auth;
 
 class StudentUserController extends Controller
 {
@@ -46,6 +48,8 @@ class StudentUserController extends Controller
                 'role_id' => 4,
             ]);
 
+            TransactionLogger::log('users', 'create', true, "Register New Student '{$student->email}'");
+            
             Mail::to($student->email)->send(new UserRegisteredMail($student, $generatedPassword));
 
             $response = new ResponseModel(
@@ -56,12 +60,13 @@ class StudentUserController extends Controller
 
             return response()->json($response, 200);
         } catch (\Exception $e) {
+            TransactionLogger::log('users', 'create', false, $e->getMessage());
             $response = new ResponseModel(
                 $e->getMessage(),
                 2,
                 null
             );
-            return response()->json($response, 500);
+            return response()->json($response);
         }
     }
 
@@ -84,7 +89,7 @@ class StudentUserController extends Controller
                     1,
                     null
                 );
-
+                TransactionLogger::log('users', 'update', false, 'Email Already Exist');
                 return response()->json($response, 200);
             } else {
 
@@ -97,7 +102,7 @@ class StudentUserController extends Controller
                 ];
 
                 $student->update($updated);
-
+                TransactionLogger::log('users', 'update', true, "Update Student '{$student->email}'");
                 $response = new ResponseModel(
                     'success',
                     0,
@@ -107,12 +112,13 @@ class StudentUserController extends Controller
                 return response()->json($response, 200);
             }
         } catch (\Exception $e) {
+            TransactionLogger::log('users', 'update', false, $e->getMessage());
             $response = new ResponseModel(
                 $e->getMessage(),
                 2,
                 null
             );
-            return response()->json($response, 500);
+            return response()->json($response);
         }
     }
 
@@ -121,19 +127,21 @@ class StudentUserController extends Controller
         try {
             $student = User::findOrFail($id);
             $student->active_flag = 0;
+            $student->updateby = Auth::id();
             $student->update();
-
+            TransactionLogger::log('users', 'delete', true, "Delete Student '{$student->email}'");
             return response()->json([
                 'status' => 0,
                 'message' => 'User deleted successfully.',
                 'data' => null
             ], 200);
         } catch (\Exception $e) {
+            TransactionLogger::log('users', 'delete', false, $e->getMessage());
             return response()->json([
                 'status' => 1,
                 'message' => 'Failed to delete student: ' . $e->getMessage(),
                 'data' => null
-            ], 500);
+            ]);
         }
     }
 
@@ -175,7 +183,7 @@ class StudentUserController extends Controller
             'status' => 1,
             'message' => 'Error: ' . $e->getMessage(),
             'data' => null,
-        ], 500);
+        ]);
     }
     }
     // Method to get all comments for an article
@@ -195,7 +203,7 @@ class StudentUserController extends Controller
                 'status' => 1,
                 'message' => 'Error: ' . $e->getMessage(),
                 'data' => null,
-            ], 500);
+            ]);
         }
     }
 
@@ -223,7 +231,7 @@ class StudentUserController extends Controller
                     'status' => 1,
                     'message' => 'Error: ' . $e->getMessage(),
                     'data' => null,
-                ], 500);
+                ]);
             }
         }
 
@@ -249,7 +257,7 @@ class StudentUserController extends Controller
                     'status' => 1,
                     'message' => 'Error: ' . $e->getMessage(),
                     'data' => null,
-                ], 500);
+                ]);
             }
         }
 
