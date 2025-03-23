@@ -15,7 +15,7 @@ class CommentSeeder extends Seeder
         $faker    = Factory::create();
         $comments = [];
 
-        for ($i = 0; $i < 20; $i++) {
+        for ($i = 0; $i < 10; $i++) {
             $userId     = $faker->numberBetween(3, 4);
             $comments[] = [
                 'comment'         => $faker->sentence,

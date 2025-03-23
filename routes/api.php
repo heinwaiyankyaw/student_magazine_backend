@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Controllers\AccountRegisterController;
 use App\Http\Controllers\AdminAuthController;
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\ContributionController;
@@ -9,23 +8,23 @@ use App\Http\Controllers\CoordinatorUserController;
 use App\Http\Controllers\FacultyController;
 use App\Http\Controllers\GuestUserController;
 use App\Http\Controllers\ManagerUserController;
-use App\Http\Controllers\StudentUserController;
 use App\Http\Controllers\MarketingManagerController;
+use App\Http\Controllers\StudentUserController;
 use App\Http\Controllers\SystemSettingController;
 use App\Http\Controllers\TransactionLogController;
-use App\Models\TransactionLog;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 // Route::get('/user', function (Request $request) {
 //     return $request->user();
 // })->middleware('auth:sanctum');
 
-Route::middleware(['auth:sanctum'])->group(function() {
+Route::middleware(['auth:sanctum'])->group(function () {
+
+    Route::post('/auth/logout', [AdminAuthController::class, 'logout']);
 
     //Admin Route
 
-    Route::get('/admin/dashboard', [AdminAuthController::class, 'login']);
+    Route::get('/admin/dashboard', [AdminAuthController::class, 'countData']);
 
     //User Management
 
