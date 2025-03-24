@@ -9,6 +9,7 @@ use App\Http\Controllers\FacultyController;
 use App\Http\Controllers\GuestUserController;
 use App\Http\Controllers\ManagerUserController;
 use App\Http\Controllers\MarketingManagerController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\StudentUserController;
 use App\Http\Controllers\SystemSettingController;
 use App\Http\Controllers\TransactionLogController;
@@ -120,6 +121,12 @@ Route::middleware(['auth:sanctum'])->group(function () {
     //Review Contribution
     Route::post('/coordinator/review', [CoordinatorController::class, 'reviewContribution']);
 
+    //View Contribution Detail
+    Route::get('/coordinator/detail/{id}', [CoordinatorController::class, 'viewContributionDetail']);
+
+    //Make Comment
+    Route::post('/coordinator/comment/make', [CoordinatorController::class, 'makeComment']);
+
     //Coordinator Route End
 
     // Marketing Manager Routes
@@ -150,6 +157,14 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/student/dashboard', [ContributionController::class, 'dashboard']);
 
     // Student Route End
+
+    // Notification Route
+
+    Route::get('/user/notifications', [NotificationController::class, 'getNotifications']);
+
+    Route::post('/user/notification/read', [NotificationController::class, 'markAsRead']);
+
+    // Notification Route End
 });
 
 Route::post('/auth/login', [AdminAuthController::class, 'login']);
