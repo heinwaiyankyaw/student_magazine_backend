@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Contribution;
 use App\Http\Helpers\ResponseModel;
+use App\Models\Comment;
 use App\Models\Notification;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -133,5 +134,85 @@ class CoordinatorController extends Controller
             $guests);
 
         return response()->json($response, 200);
+    }
+
+    public function viewContributionDetail($id){
+        try{
+            // Get contribution
+            $contribution = Contribution::findOrFail($id);
+
+            // Contribution details
+            $data = [
+                'contribution_id' => $id,
+                'title' => $contribution->title,
+                'description' => $contribution->description,
+                'article_path' => $contribution->article_path,
+                'image_paths' => json_decode($contribution->image_paths),
+                'student_data' => $contribution->student,
+                'faculty_data' => $contribution->faculty,
+                'created_at' => $contribution->created_at,
+                'updated_at' => $contribution->updated_at,
+                'comments' => $contribution->comments->map(function ($comment) {
+                    return [
+                        'id' => $comment->id,
+                        'comment' => $comment->comment,
+                        'created_at' => $comment->created_at,
+                        'user' => [
+                            'id' => $comment->user->id,
+                            'name' => $comment->user->first_name . ' ' . $comment->user->last_name,
+                        ],
+                    ];
+                }),
+            ];
+
+            // Prepare response
+            $response = new ResponseModel(
+                'success',
+                0,
+                $data);
+
+            return response()->json($response, 200);
+        } catch(\Exception $e) {
+            $response = new ResponseModel(
+                $e->getMessage(),
+                2,
+                null
+            );
+            return response()->json($response);
+        }
+    }
+
+    public function makeComment(Request $request){
+        try{
+            $request->validate([
+                'comment' => 'required|string',
+                'contribution_id' => 'required|exists:contributions,id',
+            ]);
+
+            $user = Auth::user();
+            // Create comment
+            $comment = Comment::create([
+                'comment' => $request->comment,
+                'user_id' => $user->id,
+                'contribution_id' => $request->contribution_id,
+                'createby' => $user->id,
+            ]);
+
+            // Prepare response
+            $response = new ResponseModel(
+                'Comment Added Successfully.',
+                0,
+                $comment
+            );
+
+            return response()->json($response, 200);
+        } catch(\Exception $e) {
+            $response = new ResponseModel(
+                $e->getMessage(),
+                2,
+                null
+            );
+            return response()->json($response);
+        }
     }
 }
