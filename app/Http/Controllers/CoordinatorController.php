@@ -198,6 +198,25 @@ class CoordinatorController extends Controller
                 'createby' => $user->id,
             ]);
 
+            // Get contribution
+            $contribution = Contribution::findOrFail($request->contribution_id);
+
+            //Get the student who made this contribution
+            $student = $contribution->student;
+
+            // Create notification
+            $notification = Notification::create([
+                'title' => 'Contribution Commented',
+                'message' => "A coordinator commented on your contribution. The contribution title is '$contribution->title'",
+                'createby' => $user->id,
+            ]);
+
+            // Attach notification to student
+            $student->notifications()->attach($notification->id, [
+                'is_read' => false, // Mark as unread
+                'createby' => $user->id,
+            ]);
+
             // Prepare response
             $response = new ResponseModel(
                 'Comment Added Successfully.',
