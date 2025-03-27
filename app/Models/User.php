@@ -73,9 +73,27 @@ class User extends Authenticatable
         return $this->hasMany(TransactionLog::class, 'user_id');
     }
 
+    // Get notifications related with this user
     public function notifications()
     {
-        return $this->belongsToMany(Notification::class, 'user_notification');
+        return $this->belongsToMany(Notification::class, 'user_notification', 'user_id', 'notification_id')
+                    ->where('notifications.active_flag', 1)
+                    ->withPivot('is_read')
+                    ->latest();
+    }
+
+    // Get notifications related with this user's role
+    public function roleNotifications()
+    {
+        return $this->hasManyThrough(
+            Notification::class,
+            RoleNotification::class,
+            'role_id',         // Foreign key in role_notification (role_id)
+            'id',              // Foreign key in notifications (id)
+            'role_id',         // Foreign key in users (role_id)
+            'notification_id'  // Foreign key in role_notification (notification_id)
+        )->where('notifications.active_flag', 1)
+        ->latest();
     }
 
 }

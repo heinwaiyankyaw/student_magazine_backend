@@ -17,13 +17,14 @@ class ContributionController extends Controller
         $studentName = $request->input('student_name', null);
         $query       = Contribution::where('contributions.active_flag', 1)
             ->where('contributions.faculty_id', $user->faculty_id)
-            ->leftJoin('users', 'contributions.user_id', '=', 'users.id');
+            ->leftJoin('users', 'contributions.user_id', '=', 'users.id')
+            ->leftJoin('faculties', 'contributions.faculty_id', '=', 'faculties.id');
 
         if ($studentName) {
             $query->whereRaw("CONCAT(users.first_name, ' ', users.last_name) LIKE ?", ["%{$studentName}%"]);
         }
 
-        $contributions = $query->select('contributions.*', 'users.first_name', 'users.last_name')->latest()->get();
+        $contributions = $query->select('contributions.*', 'users.first_name', 'users.last_name', 'faculties.name as faculty_name')->latest()->get();
 
         // If there is no contribution
         if ($contributions->isEmpty()) {
