@@ -65,6 +65,9 @@ class ContributionController extends Controller
             'article'  => 'required|file|mimes:doc,docx,pdf|max:2048',
             'photos'   => 'required|array|min:1',
             'photos.*' => 'image|mimes:jpeg,png|max:2048',
+            'title' => 'required',
+            'description' => 'required',
+            'faculty_id' => 'required'
         ]);
 
         $articlePath = null;
@@ -87,11 +90,11 @@ class ContributionController extends Controller
         Contribution::create([
             'article_path' => $articlePath,
             'image_paths'  => json_encode($imagePaths),
-            'title'        => "My contribution",
-            'description'  => "My contribution",
-            'user_id'      => 1,
-            'faculty_id'   => 1,
-            'createby'     => 1,
+            'title'        => $data['title'],
+            'description'  => $data['description'],
+            'user_id'      => Auth::id(),
+            'faculty_id'   => $data['faculty_id'],
+            'createby'     => Auth::id(),
         ]);
 
         $response = new ResponseModel(
@@ -99,9 +102,7 @@ class ContributionController extends Controller
             0,
             null);
 
-        return response()->json([
-            $response,
-        ]);
+        return response()->json($response);
     }
 
     public function editArticle(Request $request, $id)
