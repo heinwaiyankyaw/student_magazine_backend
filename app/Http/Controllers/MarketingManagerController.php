@@ -54,6 +54,16 @@ class MarketingManagerController extends Controller
         }
     }
 
+    public function selectedArticles() {
+        $articles = Contribution::where('active_flag', 1)->where('status', 'selected')->latest()->get();
+        $response = new ResponseModel(
+            'success',
+            0,
+            $articles
+        );
+        return response()->json($response);
+    }
+
     // View all approved contributions
     public function viewContributions(Request $request) {
         try {

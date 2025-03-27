@@ -132,13 +132,15 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // Marketing Manager Routes
 
     // Marketing Manager Dashboard
-    Route::get('/marketing-manager/dashboard', [MarketingManagerController::class, 'dashboard']);
+    Route::get('/manager/dashboard', [MarketingManagerController::class, 'dashboard']);
+
+    Route::get('/manager/selectedArticles', [MarketingManagerController::class, 'selectedArticles']);
 
     // Download Contributions as ZIP
-    Route::post('/marketing-manager/download-zip', [MarketingManagerController::class, 'downloadZip']);
+    Route::post('/manager/download-zip', [MarketingManagerController::class, 'downloadZip']);
 
     // Statistics and Reports
-    Route::get('/marketing-manager/statistics-reports', [MarketingManagerController::class, 'statisticsAndReports']);
+    Route::get('/manager/statistics-reports', [MarketingManagerController::class, 'statisticsAndReports']);
 
     // Marketing Manager Routes End
 
