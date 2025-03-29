@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Contribution;
 use App\Http\Helpers\ResponseModel;
+use App\Http\Helpers\TransactionLogger;
 use App\Models\Comment;
 use App\Models\Notification;
 use App\Models\User;
@@ -27,6 +28,8 @@ class CoordinatorController extends Controller
             $contribution->update([
                 'status' => 'selected',
             ]);
+
+            TransactionLogger::log('contributions', 'update', true, "Update contribution status as 'selected'");
 
             //Get the student who made this contribution
             $student = $contribution->student;
@@ -56,6 +59,7 @@ class CoordinatorController extends Controller
             return response()->json($response, 200);
 
         } catch(\Exception $e) {
+            TransactionLogger::log('contributions', 'update', false, $e->getMessage());
             $response = new ResponseModel(
                 $e->getMessage(),
                 2,
@@ -80,6 +84,8 @@ class CoordinatorController extends Controller
             $contribution->update([
                 'status' => 'reviewed',
             ]);
+
+            TransactionLogger::log('contributions', 'update', true, "Update contribution status as 'reviewed'");
 
             //Get the student who made this contribution
             $student = $contribution->student;
@@ -109,6 +115,7 @@ class CoordinatorController extends Controller
             return response()->json($response, 200);
 
         } catch(\Exception $e) {
+            TransactionLogger::log('contributions', 'update', false, $e->getMessage());
             $response = new ResponseModel(
                 $e->getMessage(),
                 2,
@@ -203,6 +210,8 @@ class CoordinatorController extends Controller
                 'createby' => $user->id,
             ]);
 
+            TransactionLogger::log('comments', 'create', true, "Make comment on a contribution");
+
             // Get contribution
             $contribution = Contribution::findOrFail($request->contribution_id);
 
@@ -231,6 +240,7 @@ class CoordinatorController extends Controller
 
             return response()->json($response, 200);
         } catch(\Exception $e) {
+            TransactionLogger::log('comments', 'create', false, $e->getMessage());
             $response = new ResponseModel(
                 $e->getMessage(),
                 2,
