@@ -143,24 +143,29 @@ class CoordinatorController extends Controller
 
             // Contribution details
             $data = [
-                'contribution_id' => $id,
+                'id' => $id,
                 'title' => $contribution->title,
                 'description' => $contribution->description,
                 'article_path' => $contribution->article_path,
                 'image_paths' => json_decode($contribution->image_paths),
-                'student_data' => $contribution->student,
-                'faculty_data' => $contribution->faculty,
+                'user_id' => $contribution->student->id,
+                'faculty_id' => $contribution->faculty->id,
+                'status' => $contribution->status,
+                'active_flag' => $contribution->active_flag,
                 'created_at' => $contribution->created_at,
                 'updated_at' => $contribution->updated_at,
+                'updateby' => $contribution->updateby,
+                'first_name' => $contribution->student->first_name,
+                'last_name' => $contribution->student->last_name,
+                'faculty_name' => $contribution->faculty->name,
                 'comments' => $contribution->comments->map(function ($comment) {
                     return [
                         'id' => $comment->id,
                         'comment' => $comment->comment,
                         'created_at' => $comment->created_at,
-                        'user' => [
-                            'id' => $comment->user->id,
-                            'name' => $comment->user->first_name . ' ' . $comment->user->last_name,
-                        ],
+                        'user_id' => $comment->user->id,
+                        'name' => $comment->user->first_name . ' ' . $comment->user->last_name,
+
                     ];
                 }),
             ];
