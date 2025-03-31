@@ -150,11 +150,15 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     Route::get('/student/contributions', [ContributionController::class, 'getContributionsByStudentID']);
 
+    Route::get('/student/contributions/{id}', [ContributionController::class, 'getContributionByContributionID']);
+
     Route::post('/student/articles/{id}/edit', [ContributionController::class, 'editArticle']);
 
     Route::get('/student/articles/{id}/comments', [ContributionController::class, 'viewComments']);
 
-    Route::post('/student/articles/{articleId}/comments/{commentId}/respond', [ContributionController::class, 'respondToComment']);
+    // Route::post('/student/articles/{articleId}/comments/{commentId}/respond', [ContributionController::class, 'respondToComment']);
+
+    Route::post('/student/articles/{articleId}/comments', [ContributionController::class, 'addComment']);
 
     Route::get('/student/dashboard', [ContributionController::class, 'dashboard']);
 

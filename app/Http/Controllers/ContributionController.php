@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use App\Http\Helpers\ResponseModel;
@@ -31,14 +32,16 @@ class ContributionController extends Controller
             $response = new ResponseModel(
                 'No contributions found.',
                 1,
-                null);
+                null
+            );
             return response()->json($response);
         }
 
         $response = new ResponseModel(
             'success',
             0,
-            $contributions);
+            $contributions
+        );
 
         return response()->json($response, 200);
     }
@@ -55,16 +58,40 @@ class ContributionController extends Controller
         $response = new ResponseModel(
             'success',
             0,
-            $contributions);
+            $contributions
+        );
 
         return response()->json($response, 200);
     }
+
+
+    public function getContributionByContributionID($id)
+    {
+        $contribution = Contribution::with(['faculty', 'comments'])
+            ->where('active_flag', 1)
+            ->find($id);
+
+        if (!$contribution) {
+            return response()->json(new ResponseModel(
+                'Contribution not found',
+                1,
+                null
+            ), 200);
+        }
+
+        return response()->json(new ResponseModel(
+            'Success',
+            0,
+            $contribution
+        ), 200);
+    }
+
 
     public function uploadArticle(Request $request)
     {
         $data = $request->validate([
             'article'  => 'required|file|mimes:doc,docx,pdf|max:2048',
-            'photos'   => 'required|array|min:1',
+            'photos'   => 'array|min:1',
             'photos.*' => 'image|mimes:jpeg,png|max:2048',
             'title' => 'required',
             'description' => 'required',
@@ -101,7 +128,8 @@ class ContributionController extends Controller
         $response = new ResponseModel(
             'success',
             0,
-            null);
+            null
+        );
 
         return response()->json($response);
     }
@@ -143,69 +171,113 @@ class ContributionController extends Controller
         $response = new ResponseModel(
             'success',
             0,
-            null);
+            null
+        );
 
         return response()->json($response);
     }
 
     public function viewComments($id)
     {
-        $contribution = Contribution::find($id);
+        $contribution = Contribution::with(['comments' => function ($query) {
+            $query->orderBy('created_at', 'desc')->with('user');
+        }])->find($id);
 
-        if (! $contribution) {
-            $response = new ResponseModel(
-                'Contribution not found.',
+        if (!$contribution) {
+            return response()->json(new ResponseModel(
+                'Contribution not found',
                 1,
-                null);
-            return response()->json($response);
+                null
+            ), 200);
         }
 
-        $comments = $contribution->comments()->with('contribution')->whereNull('comment_id')->get();
+        $comments = $contribution->comments;
 
         if ($comments->isEmpty()) {
-            $response = new ResponseModel(
-                'No comments found.',
-                1,
-                null);
-            return response()->json($response);
+            return response()->json(new ResponseModel(
+                'No comments found',
+                0,
+                []
+            ), 200);
         }
 
-        $response = new ResponseModel(
-            'success',
+        return response()->json(new ResponseModel(
+            'Success',
             0,
-            $comments);
+            $comments
+        ), 200);
+    }
+
+
+    // public function respondToComment(Request $request, $articleId, $commentId)
+    // {
+    //     $data = $request->validate([
+    //         'comment' => 'required|string|max:255',
+    //     ]);
+
+    //     $comment = Comment::find($commentId);
+
+    //     if (! $comment) {
+    //         $response = new ResponseModel(
+    //             'Comment not found.',
+    //             1,
+    //             null
+    //         );
+    //         return response()->json($response);
+    //     }
+
+    //     $data['contribution_id'] = $articleId;
+    //     $data['user_id']         = Auth::id();
+    //     $data['active_flag']     = 1;
+    //     $data['createby']        = Auth::id();
+    //     $data['updateby']        = Auth::id();
+    //     $data['comment_id']      = $commentId;
+    //     Comment::create($data);
+    //     $response = new ResponseModel(
+    //         'success',
+    //         0,
+    //         null
+    //     );
+    //     return response()->json($response);
+    // }
+
+
+    public function addComment(Request $request, $contributionId)
+    {
+        // Validate request data
+        $validated = $request->validate([
+            'comment' => 'required|string|max:255',
+            'contribution_id' => 'required|integer|exists:contributions,id',
+        ]);
+
+        // Check if contribution exists
+        $contribution = Contribution::find($contributionId);
+
+        if (!$contribution) {
+            $response = new ResponseModel(
+                'Contribution not found',
+                1,
+                null
+            );
+            return response()->json($response, 200);
+        }
+
+        // Create the comment
+        $comment = Comment::create([
+            'comment' => $validated['comment'],
+            'contribution_id' => $contributionId,
+            'user_id' => Auth::id(),
+            'active_flag' => true,
+            'createby' => Auth::id(),
+            'updateby' => Auth::id()
+        ]);
+
+        $response = new ResponseModel(
+            'Comment added successfully',
+            0,
+            $comment
+        );
 
         return response()->json($response, 200);
     }
-
-    public function respondToComment(Request $request, $articleId, $commentId)
-    {
-        $data = $request->validate([
-            'comment' => 'required|string|max:255',
-        ]);
-
-        $comment = Comment::find($commentId);
-
-        if (! $comment) {
-            $response = new ResponseModel(
-                'Comment not found.',
-                1,
-                null);
-            return response()->json($response);
-        }
-
-        $data['contribution_id'] = $articleId;
-        $data['user_id']         = Auth::id();
-        $data['active_flag']     = 1;
-        $data['createby']        = Auth::id();
-        $data['updateby']        = Auth::id();
-        $data['comment_id']      = $commentId;
-        Comment::create($data);
-        $response = new ResponseModel(
-            'success',
-            0,
-            null);
-        return response()->json($response);
-    }
-
 }
