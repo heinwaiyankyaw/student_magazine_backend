@@ -194,7 +194,7 @@ class CoordinatorController extends Controller
         }
     }
 
-    public function makeComment(Request $request){
+    public function addComment(Request $request){
         try{
             $request->validate([
                 'comment' => 'required|string',

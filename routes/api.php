@@ -125,7 +125,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/coordinator/detail/{id}', [CoordinatorController::class, 'viewContributionDetail']);
 
     //Make Comment
-    Route::post('/coordinator/comment/make', [CoordinatorController::class, 'makeComment']);
+    Route::post('/coordinator/comment/add', [CoordinatorController::class, 'addComment']);
 
     //Coordinator Route End
 
