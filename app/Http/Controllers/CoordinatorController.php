@@ -231,6 +231,8 @@ class CoordinatorController extends Controller
                 'createby' => $user->id,
             ]);
 
+            $comment['name'] = $user->first_name . ' ' .$user->last_name;
+
             // Prepare response
             $response = new ResponseModel(
                 'Comment Added Successfully.',
