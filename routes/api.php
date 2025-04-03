@@ -115,6 +115,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
     //View Faculty Guest
     Route::get('/coordinator/guests', [CoordinatorController::class, 'getGuestByFacultyID']);
 
+    //View Faculty Student
+    Route::get('/coordinator/students', [CoordinatorController::class, 'getStudentByFacultyID']);
+
     //Select Contribution
     Route::post('/coordinator/select', [CoordinatorController::class, 'selectContribution']);
 

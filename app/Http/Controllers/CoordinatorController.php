@@ -143,6 +143,24 @@ class CoordinatorController extends Controller
         return response()->json($response, 200);
     }
 
+    public function getStudentByFacultyID(){
+        $user = Auth::user();
+
+        // Get students from this faculty
+        $students = User::where('active_flag', 1)
+                ->where('role_id', 4)
+                ->where('faculty_id', $user->faculty_id)
+                ->latest()->get();
+
+        // Prepare response
+        $response = new ResponseModel(
+            'success',
+            0,
+            $students);
+
+        return response()->json($response, 200);
+    }
+
     public function viewContributionDetail($id){
         try{
             // Get contribution
