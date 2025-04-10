@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Helpers\ResponseModel;
 use App\Models\Comment;
 use App\Models\Contribution;
+use Aws\S3\S3Client;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -86,6 +87,52 @@ class ContributionController extends Controller
         ), 200);
     }
 
+    // public function uploadArticle(Request $request)
+    // {
+    //     $data = $request->validate([
+    //         'article'  => 'required|file|mimes:doc,docx,pdf|max:2048',
+    //         'photos'   => 'array|min:1',
+    //         'photos.*' => 'image|mimes:jpeg,png|max:2048',
+    //         'title' => 'required',
+    //         'description' => 'required',
+    //         'faculty_id' => 'required'
+    //     ]);
+
+    //     $articlePath = null;
+    //     if ($request->hasFile('article')) {
+    //         $article     = $request->file('article');
+    //         $articleName = uniqid() . '_' . $article->getClientOriginalName();
+    //         $articlePath = $article->storeAs('uploads/articles', $articleName, 'public');
+    //     }
+
+    //     $imagePaths = [];
+    //     if ($request->hasFile('photos')) {
+    //         foreach ($request->file('photos') as $photo) {
+    //             $imageName    = uniqid() . '_' . $photo->getClientOriginalName();
+    //             $path         = $photo->storeAs('uploads/images', $imageName, 'public');
+    //             $imagePaths[] = $path;
+    //         }
+    //     }
+
+    //     // Store in database
+    //     Contribution::create([
+    //         'article_path' => $articlePath,
+    //         'image_paths'  => json_encode($imagePaths),
+    //         'title'        => $data['title'],
+    //         'description'  => $data['description'],
+    //         'user_id'      => Auth::id(),
+    //         'faculty_id'   => $data['faculty_id'],
+    //         'createby'     => Auth::id(),
+    //     ]);
+
+    //     $response = new ResponseModel(
+    //         'success',
+    //         0,
+    //         null
+    //     );
+
+    //     return response()->json($response);
+    // }
 
     public function uploadArticle(Request $request)
     {
@@ -98,25 +145,66 @@ class ContributionController extends Controller
             'faculty_id' => 'required'
         ]);
 
-        $articlePath = null;
+        // Initialize S3 client
+        $s3Client = new S3Client([
+            'credentials' => [
+                'key'    => config('filesystems.disks.spaces.key'),
+                'secret' => config('filesystems.disks.spaces.secret'),
+            ],
+            'region' => config('filesystems.disks.spaces.region'),
+            'version' => 'latest',
+            'endpoint' => config('filesystems.disks.spaces.endpoint'),
+            'use_path_style_endpoint' => false,
+            'http' => [
+                'verify' => false
+            ]
+        ]);
+
         if ($request->hasFile('article')) {
             $article     = $request->file('article');
             $articleName = uniqid() . '_' . $article->getClientOriginalName();
-            $articlePath = $article->storeAs('uploads/articles', $articleName, 'public');
+            $articleContent = file_get_contents($article->getRealPath());
+            $articleType = $article->getMimeType();
+
+            // Upload file to S3/Spaces
+            $result = $s3Client->putObject([
+                'Bucket' => config('filesystems.disks.spaces.bucket'),
+                'Key' => $articleName,
+                'Body' => $articleContent,
+                'ContentType' => $articleType,
+                'ACL' => 'public-read', // Or 'private' depending on your needs
+            ]);
+
+            // Get the URL of the uploaded file
+            $fileUrl = $result['ObjectURL'] ?? null;
         }
 
+        // Upload each image file to Spaces
         $imagePaths = [];
         if ($request->hasFile('photos')) {
             foreach ($request->file('photos') as $photo) {
-                $imageName    = uniqid() . '_' . $photo->getClientOriginalName();
-                $path         = $photo->storeAs('uploads/images', $imageName, 'public');
-                $imagePaths[] = $path;
+                $imageName = uniqid() . '_' . $photo->getClientOriginalName();
+                $photoContent = file_get_contents($photo->getRealPath());
+                $photoType = $photo->getMimeType();
+
+                $result = $s3Client->putObject([
+                    'Bucket'      => config('filesystems.disks.spaces.bucket'),
+                    'Key'         => $imageName,
+                    'Body'        => $photoContent,
+                    'ContentType' => $photoType,
+                    'ACL'         => 'public-read',
+                ]);
+
+                $imageUrl = $result['ObjectURL'] ?? null;
+                if ($imageUrl) {
+                    $imagePaths[] = $imageUrl;
+                }
             }
         }
 
         // Store in database
         Contribution::create([
-            'article_path' => $articlePath,
+            'article_path' => $fileUrl,
             'image_paths'  => json_encode($imagePaths),
             'title'        => $data['title'],
             'description'  => $data['description'],
