@@ -2,6 +2,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Helpers\ResponseModel;
+use App\Http\Helpers\TransactionLogger;
 use App\Models\Comment;
 use App\Models\Contribution;
 use Aws\S3\S3Client;
@@ -211,6 +212,8 @@ class ContributionController extends Controller
             'createby'     => Auth::id(),
         ]);
 
+        TransactionLogger::log('Contributions', 'upload', true, "Contribution was upload by'" . auth()->user()->first_name . " " . auth()->user()->last_name . "'");
+
         $response = new ResponseModel(
             'success',
             0,
@@ -253,6 +256,8 @@ class ContributionController extends Controller
         $contribution->description = $data['description'];
         $contribution->updateby    = Auth::id();
         $contribution->save();
+
+        TransactionLogger::log('Contributions', 'edit', true, "Contribution was edit by '" . auth()->user()->first_name . " " . auth()->user()->last_name . "'");
 
         $response = new ResponseModel(
             'success',
@@ -355,6 +360,8 @@ class ContributionController extends Controller
             'createby'        => Auth::id(),
             'updateby'        => Auth::id(),
         ]);
+
+        TransactionLogger::log('Comments', 'create', true, "Comment was comment by '" . auth()->user()->first_name . " " . auth()->user()->last_name . "'");
 
         $response = new ResponseModel(
             'Comment added successfully',

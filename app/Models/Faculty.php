@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -13,6 +12,11 @@ class Faculty extends Model
 
     public function users()
     {
-        return $this->hasMany(User::class, 'faculty_id');
+        return $this->hasMany(User::class, 'user_id');
+    }
+
+    public function contributions()
+    {
+        return $this->hasMany(Contribution::class, 'faculty_id');
     }
 }

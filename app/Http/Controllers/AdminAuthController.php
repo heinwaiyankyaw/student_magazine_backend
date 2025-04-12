@@ -5,6 +5,7 @@ use App\Http\Helpers\ResponseModel;
 use App\Models\Contribution;
 use App\Models\Faculty;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -169,37 +170,188 @@ class AdminAuthController extends Controller
         }
     }
 
+    // public function countData()
+    // {
+    //     $students       = User::where('role_id', 4)->count();
+    //     $coordinators   = User::where('role_id', 3)->count();
+    //     $managers       = User::where('role_id', 2)->count();
+    //     $guests         = User::where('role_id', 5)->count();
+    //     $constributions = Contribution::count();
+    //     $faculties      = Faculty::count();
+
+    //     $oneMonthAgo = Carbon::now()->subMonth();
+
+    //     // Total submissions in the past month
+    //     $totalSubmissions = Contribution::where('created_at', '>=', $oneMonthAgo)->count();
+
+    //     // Pending reviews in the past month
+    //     $pendingReviews = Contribution::where('created_at', '>=', $oneMonthAgo)
+    //         ->where('status', 'pending')
+    //         ->count();
+
+    //     // Approved (selected) in the past month
+    //     $approvedSubmissions = Contribution::where('created_at', '>=', $oneMonthAgo)
+    //         ->where('status', 'selected')
+    //         ->count();
+
+    //     $faculties = Faculty::withCount(['contributions' => function ($query) use ($oneMonthAgo) {
+    //         $query->where('created_at', '>=', $oneMonthAgo);
+    //     }])
+    //         ->having('contributions_count', '>', 0)
+    //         ->get();
+
+    //     $donurtChart = [
+    //         'labels' => $faculties->pluck('name'),
+    //         'data'   => $faculties->pluck('contributions_count'),
+    //     ];
+
+    //     $monthlyCounts = $this->calculateMonthlyContributions();
+
+    //     $barChart = [
+    //         'labels' => $monthlyCounts->pluck('month'),
+    //         'data'   => $monthlyCounts->pluck('total'),
+    //     ];
+
+    //     if (Auth::user()->role_id != 1) {
+    //         $response = new ResponseModel(
+    //             'Unauthorized',
+    //             1,
+    //             null
+    //         );
+    //         return response()->json($response);
+    //     }
+
+    //     $data = [
+    //         'students'       => $students,
+    //         'coordinators'   => $coordinators,
+    //         'managers'       => $managers,
+    //         'guests'         => $guests,
+    //         'constributions' => $constributions,
+    //         'faculties'      => $faculties,
+    //         'past_month'     => [
+    //             'total_submissions' => $totalSubmissions,
+    //             'pending_reviews'   => $pendingReviews,
+    //             'approved'          => $approvedSubmissions,
+    //         ],
+    //         'donut_chart'    => [
+    //             $donurtChart,
+    //         ],
+    //         'bar_chart'      => [
+    //             $barChart,
+    //         ],
+    //     ];
+    //     $response = new ResponseModel(
+    //         'success',
+    //         0,
+    //         $data
+    //     );
+    //     return response()->json($response);
+    // }
+
+    // private function calculateMonthlyContributions()
+    // {
+    //     $startDate = Carbon::now()->subMonths(11)->startOfMonth();
+    //     $endDate   = Carbon::now()->endOfMonth();
+
+    //     $contributions = Contribution::whereBetween('created_at', [$startDate, $endDate])->get();
+
+    //     return collect(range(0, 11))->map(function ($i) use ($contributions) {
+    //         $date      = Carbon::now()->subMonths(11 - $i);
+    //         $monthName = $date->format('M');
+    //         $count     = $contributions->filter(function ($item) use ($date) {
+    //             return $item->created_at->format('Y-m') === $date->format('Y-m');
+    //         })->count();
+
+    //         return [
+    //             'month' => $monthName,
+    //             'total' => $count,
+    //         ];
+    //     });
+    // }
+
     public function countData()
     {
-        $students       = User::where('role_id', 4)->count();
-        $coordinators   = User::where('role_id', 3)->count();
-        $managers       = User::where('role_id', 2)->count();
-        $guests         = User::where('role_id', 5)->count();
-        $constributions = Contribution::count();
-        $faculties      = Faculty::count();
-
         if (Auth::user()->role_id != 1) {
-            $response = new ResponseModel(
-                'Unauthorized',
-                1,
-                null
-            );
-            return response()->json($response);
+            return $this->unauthorizedResponse();
         }
 
+        // Optimized counting logic for Users based on role
+        $roleCounts = $this->countUserRoles();
+
+        // Past month statistics
+        $oneMonthAgo = Carbon::now()->subMonth();
+
+        // Response structure
         $data = [
-            'students'       => $students,
-            'coordinators'   => $coordinators,
-            'managers'       => $managers,
-            'guests'         => $guests,
-            'constributions' => $constributions,
-            'faculties'      => $faculties,
+            'students'       => $roleCounts['students'],
+            'coordinators'   => $roleCounts['coordinators'],
+            'managers'       => $roleCounts['managers'],
+            'guests'         => $roleCounts['guests'],
+            'constributions' => Contribution::count(),
+            'past_month'     => $this->getMonthlyStats($oneMonthAgo),
+            'donut_chart'    => $this->getFacultyContributions(),
+            'bar_chart'      => $this->calculateMonthlyContributions(),
         ];
-        $response = new ResponseModel(
-            'success',
-            0,
-            $data
-        );
-        return response()->json($response);
+
+        return response()->json(new ResponseModel('success', 0, $data));
     }
+
+    private function unauthorizedResponse()
+    {
+        return response()->json(new ResponseModel('Unauthorized', 1, null));
+    }
+
+    private function countUserRoles()
+    {
+        return [
+            'students'     => User::where('role_id', 4)->count(),
+            'coordinators' => User::where('role_id', 3)->count(),
+            'managers'     => User::where('role_id', 2)->count(),
+            'guests'       => User::where('role_id', 5)->count(),
+        ];
+    }
+
+    private function getMonthlyStats($oneMonthAgo)
+    {
+        return [
+            'total_submissions' => Contribution::where('created_at', '>=', $oneMonthAgo)->count(),
+            'pending_reviews'   => Contribution::where('created_at', '>=', $oneMonthAgo)->where('status', 'pending')->count(),
+            'approved'          => Contribution::where('created_at', '>=', $oneMonthAgo)->where('status', 'selected')->count(),
+        ];
+    }
+
+    private function getFacultyContributions()
+    {
+        $oneMonthAgo = Carbon::now()->subMonth();
+
+        return Faculty::select('name')->withCount(['contributions' => function ($query) use ($oneMonthAgo) {
+            $query->where('created_at', '>=', $oneMonthAgo);
+        }])
+            ->having('contributions_count', '>', 0)
+            ->get();
+    }
+
+    private function calculateMonthlyContributions()
+    {
+        $year      = Carbon::now()->year;
+        $startDate = Carbon::create($year, 1, 1)->startOfMonth();
+        $endDate   = Carbon::create($year, 12, 31)->endOfMonth();
+
+        $contributions = Contribution::whereBetween('created_at', [$startDate, $endDate])->get();
+
+        return collect(range(1, 12))->map(function ($month) use ($year, $contributions) {
+            $monthDate = Carbon::create($year, $month, 1);
+            $monthName = $monthDate->format('M');
+
+            $count = $contributions->filter(function ($item) use ($monthDate) {
+                return $item->created_at->format('Y-m') === $monthDate->format('Y-m');
+            })->count();
+
+            return [
+                'month' => $monthName,
+                'total' => $count,
+            ];
+        });
+    }
+
 }
