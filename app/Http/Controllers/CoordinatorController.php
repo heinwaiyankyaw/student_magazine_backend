@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Contribution;
 use App\Http\Helpers\ResponseModel;
+use App\Http\Helpers\TransactionLogger;
 use App\Models\Comment;
 use App\Models\Notification;
 use App\Models\User;
@@ -27,6 +28,8 @@ class CoordinatorController extends Controller
             $contribution->update([
                 'status' => 'selected',
             ]);
+
+            TransactionLogger::log('contributions', 'update', true, "Update contribution status as 'selected'");
 
             //Get the student who made this contribution
             $student = $contribution->student;
@@ -56,6 +59,7 @@ class CoordinatorController extends Controller
             return response()->json($response, 200);
 
         } catch(\Exception $e) {
+            TransactionLogger::log('contributions', 'update', false, $e->getMessage());
             $response = new ResponseModel(
                 $e->getMessage(),
                 2,
@@ -80,6 +84,8 @@ class CoordinatorController extends Controller
             $contribution->update([
                 'status' => 'reviewed',
             ]);
+
+            TransactionLogger::log('contributions', 'update', true, "Update contribution status as 'reviewed'");
 
             //Get the student who made this contribution
             $student = $contribution->student;
@@ -109,6 +115,7 @@ class CoordinatorController extends Controller
             return response()->json($response, 200);
 
         } catch(\Exception $e) {
+            TransactionLogger::log('contributions', 'update', false, $e->getMessage());
             $response = new ResponseModel(
                 $e->getMessage(),
                 2,
@@ -136,6 +143,24 @@ class CoordinatorController extends Controller
         return response()->json($response, 200);
     }
 
+    public function getStudentByFacultyID(){
+        $user = Auth::user();
+
+        // Get students from this faculty
+        $students = User::where('active_flag', 1)
+                ->where('role_id', 4)
+                ->where('faculty_id', $user->faculty_id)
+                ->latest()->get();
+
+        // Prepare response
+        $response = new ResponseModel(
+            'success',
+            0,
+            $students);
+
+        return response()->json($response, 200);
+    }
+
     public function viewContributionDetail($id){
         try{
             // Get contribution
@@ -143,24 +168,29 @@ class CoordinatorController extends Controller
 
             // Contribution details
             $data = [
-                'contribution_id' => $id,
+                'id' => $id,
                 'title' => $contribution->title,
                 'description' => $contribution->description,
                 'article_path' => $contribution->article_path,
                 'image_paths' => json_decode($contribution->image_paths),
-                'student_data' => $contribution->student,
-                'faculty_data' => $contribution->faculty,
+                'user_id' => $contribution->student->id,
+                'faculty_id' => $contribution->faculty->id,
+                'status' => $contribution->status,
+                'active_flag' => $contribution->active_flag,
                 'created_at' => $contribution->created_at,
                 'updated_at' => $contribution->updated_at,
+                'updateby' => $contribution->updateby,
+                'first_name' => $contribution->student->first_name,
+                'last_name' => $contribution->student->last_name,
+                'faculty_name' => $contribution->faculty->name,
                 'comments' => $contribution->comments->map(function ($comment) {
                     return [
                         'id' => $comment->id,
                         'comment' => $comment->comment,
                         'created_at' => $comment->created_at,
-                        'user' => [
-                            'id' => $comment->user->id,
-                            'name' => $comment->user->first_name . ' ' . $comment->user->last_name,
-                        ],
+                        'user_id' => $comment->user->id,
+                        'name' => $comment->user->first_name . ' ' . $comment->user->last_name,
+
                     ];
                 }),
             ];
@@ -182,7 +212,7 @@ class CoordinatorController extends Controller
         }
     }
 
-    public function makeComment(Request $request){
+    public function addComment(Request $request){
         try{
             $request->validate([
                 'comment' => 'required|string',
@@ -197,6 +227,8 @@ class CoordinatorController extends Controller
                 'contribution_id' => $request->contribution_id,
                 'createby' => $user->id,
             ]);
+
+            TransactionLogger::log('comments', 'create', true, "Make comment on a contribution");
 
             // Get contribution
             $contribution = Contribution::findOrFail($request->contribution_id);
@@ -217,6 +249,8 @@ class CoordinatorController extends Controller
                 'createby' => $user->id,
             ]);
 
+            $comment['name'] = $user->first_name . ' ' .$user->last_name;
+
             // Prepare response
             $response = new ResponseModel(
                 'Comment Added Successfully.',
@@ -226,6 +260,7 @@ class CoordinatorController extends Controller
 
             return response()->json($response, 200);
         } catch(\Exception $e) {
+            TransactionLogger::log('comments', 'create', false, $e->getMessage());
             $response = new ResponseModel(
                 $e->getMessage(),
                 2,

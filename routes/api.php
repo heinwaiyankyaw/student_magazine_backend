@@ -115,6 +115,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
     //View Faculty Guest
     Route::get('/coordinator/guests', [CoordinatorController::class, 'getGuestByFacultyID']);
 
+    //View Faculty Student
+    Route::get('/coordinator/students', [CoordinatorController::class, 'getStudentByFacultyID']);
+
     //Select Contribution
     Route::post('/coordinator/select', [CoordinatorController::class, 'selectContribution']);
 
@@ -125,20 +128,22 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/coordinator/detail/{id}', [CoordinatorController::class, 'viewContributionDetail']);
 
     //Make Comment
-    Route::post('/coordinator/comment/make', [CoordinatorController::class, 'makeComment']);
+    Route::post('/coordinator/comment/add', [CoordinatorController::class, 'addComment']);
 
     //Coordinator Route End
 
     // Marketing Manager Routes
 
     // Marketing Manager Dashboard
-    Route::get('/marketing-manager/dashboard', [MarketingManagerController::class, 'dashboard']);
+    Route::get('/manager/dashboard', [MarketingManagerController::class, 'dashboard']);
+
+    Route::get('/manager/selectedArticles', [MarketingManagerController::class, 'selectedArticles']);
 
     // Download Contributions as ZIP
-    Route::post('/marketing-manager/download-zip', [MarketingManagerController::class, 'downloadZip']);
+    Route::post('/manager/download-zip', [MarketingManagerController::class, 'downloadZip']);
 
     // Statistics and Reports
-    Route::get('/marketing-manager/statistics-reports', [MarketingManagerController::class, 'statisticsAndReports']);
+    Route::get('/manager/statistics-reports', [MarketingManagerController::class, 'statisticsAndReports']);
 
     // Marketing Manager Routes End
 
@@ -148,11 +153,15 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     Route::get('/student/contributions', [ContributionController::class, 'getContributionsByStudentID']);
 
+    Route::get('/student/contributions/{id}', [ContributionController::class, 'getContributionByContributionID']);
+
     Route::post('/student/articles/{id}/edit', [ContributionController::class, 'editArticle']);
 
     Route::get('/student/articles/{id}/comments', [ContributionController::class, 'viewComments']);
 
-    Route::post('/student/articles/{articleId}/comments/{commentId}/respond', [ContributionController::class, 'respondToComment']);
+    // Route::post('/student/articles/{articleId}/comments/{commentId}/respond', [ContributionController::class, 'respondToComment']);
+
+    Route::post('/student/articles/{articleId}/comments', [ContributionController::class, 'addComment']);
 
     Route::get('/student/dashboard', [ContributionController::class, 'dashboard']);
 
