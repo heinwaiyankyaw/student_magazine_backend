@@ -16,7 +16,6 @@ return new class extends Migration
             $table->text('comment');
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('contribution_id')->constrained('contributions')->onDelete('cascade');
-            $table->foreignId('comment_id')->nullable()->constrained('comments')->onDelete('cascade');
             $table->boolean('active_flag')->default(true);
             $table->timestamps();
             $table->unsignedBigInteger('createby');

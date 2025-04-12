@@ -2,6 +2,7 @@
 namespace Database\Seeders;
 
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Models\Contribution;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
@@ -18,5 +19,6 @@ class DatabaseSeeder extends Seeder
             ContributionSeeder::class,
             CommentSeeder::class,
         ]);
+        Contribution::factory(50)->create();
     }
 }

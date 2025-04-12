@@ -63,12 +63,12 @@ class ContributionController extends Controller
     public function uploadArticle(Request $request)
     {
         $data = $request->validate([
-            'article'  => 'required|file|mimes:doc,docx,pdf|max:2048',
-            'photos'   => 'required|array|min:1',
-            'photos.*' => 'image|mimes:jpeg,png|max:2048',
-            'title' => 'required',
+            'article'     => 'required|file|mimes:doc,docx,pdf|max:2048',
+            'photos'      => 'required|array|min:1',
+            'photos.*'    => 'image|mimes:jpeg,png|max:2048',
+            'title'       => 'required',
             'description' => 'required',
-            'faculty_id' => 'required'
+            'faculty_id'  => 'required',
         ]);
 
         $articlePath = null;
@@ -160,7 +160,7 @@ class ContributionController extends Controller
             return response()->json($response);
         }
 
-        $comments = $contribution->comments()->with('contribution')->whereNull('comment_id')->get();
+        $comments = $contribution->comments()->with('contribution')->get();
 
         if ($comments->isEmpty()) {
             $response = new ResponseModel(
@@ -199,7 +199,6 @@ class ContributionController extends Controller
         $data['active_flag']     = 1;
         $data['createby']        = Auth::id();
         $data['updateby']        = Auth::id();
-        $data['comment_id']      = $commentId;
         Comment::create($data);
         $response = new ResponseModel(
             'success',
