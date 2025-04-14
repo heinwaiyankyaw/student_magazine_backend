@@ -32,7 +32,7 @@ class ContributionController extends Controller
         if ($contributions->isEmpty()) {
             $response = new ResponseModel(
                 'No contributions found.',
-                1,
+                0,
                 null
             );
             return response()->json($response);
@@ -74,7 +74,7 @@ class ContributionController extends Controller
         if (! $contribution) {
             return response()->json(new ResponseModel(
                 'Contribution not found',
-                1,
+                0,
                 null
             ), 200);
         }

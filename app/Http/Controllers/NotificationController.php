@@ -50,7 +50,7 @@ class NotificationController extends Controller
             if ($notifications->isEmpty()) {
                 $response = new ResponseModel(
                     'No notifications found.',
-                    1,
+                    0,
                     null);
                 return response()->json($response);
             }
