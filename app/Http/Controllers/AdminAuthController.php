@@ -1,9 +1,11 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use App\Http\Helpers\ResponseModel;
 use App\Models\Contribution;
 use App\Models\Faculty;
+use App\Models\SystemSetting;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -287,14 +289,62 @@ class AdminAuthController extends Controller
             'coordinators'   => $roleCounts['coordinators'],
             'managers'       => $roleCounts['managers'],
             'guests'         => $roleCounts['guests'],
-            'constributions' => Contribution::count(),
+            'faculties'      => Faculty::count(),
+            'contributions'  => Contribution::count(),
+            'approved'       => Contribution::where('status', 'selected')->count(),
+            'rejected'       => Contribution::where('status', 'rejected')->count(),
+            'setting'        => SystemSetting::first(),
             'past_month'     => $this->getMonthlyStats($oneMonthAgo),
-            'donut_chart'    => $this->getFacultyContributions(),
-            'bar_chart'      => $this->calculateMonthlyContributions(),
+            'contributionData' => $this->calculateMonthlyContributions(),
+            'contributionDataByFaculty' => $this->getContributionDataByFaculty(),
         ];
 
         return response()->json(new ResponseModel('success', 0, $data));
     }
+
+    public function calculateMonthlyContributions(): array
+    {
+        // Get contributions grouped by month with counts
+        $contributions = Contribution::selectRaw('MONTH(created_at) as month, COUNT(*) as total')
+            ->groupBy('month')
+            ->pluck('total', 'month');
+
+        // Initialize array for all 12 months
+        $result = [];
+        $monthNames = [
+            1 => "Jan",
+            2 => "Feb",
+            3 => "Mar",
+            4 => "Apr",
+            5 => "May",
+            6 => "Jun",
+            7 => "Jul",
+            8 => "Aug",
+            9 => "Sep",
+            10 => "Oct",
+            11 => "Nov",
+            12 => "Dec"
+        ];
+
+        foreach ($monthNames as $num => $name) {
+            $result[] = [
+                'name'  => $name,
+                'value' => $contributions[$num] ?? 0,
+            ];
+        }
+
+        return $result;
+    }
+
+    private function getContributionDataByFaculty()
+{
+    return Faculty::withCount(['contributions'])->get()->map(function ($faculty) {
+        return [
+            'name' => $faculty->name,
+            'value' => $faculty->contributions_count,
+        ];
+    });
+}
 
     private function unauthorizedResponse()
     {
@@ -331,27 +381,26 @@ class AdminAuthController extends Controller
             ->get();
     }
 
-    private function calculateMonthlyContributions()
-    {
-        $year      = Carbon::now()->year;
-        $startDate = Carbon::create($year, 1, 1)->startOfMonth();
-        $endDate   = Carbon::create($year, 12, 31)->endOfMonth();
+    // private function calculateMonthlyContributions()
+    // {
+    //     $year      = Carbon::now()->year;
+    //     $startDate = Carbon::create($year, 1, 1)->startOfMonth();
+    //     $endDate   = Carbon::create($year, 12, 31)->endOfMonth();
 
-        $contributions = Contribution::whereBetween('created_at', [$startDate, $endDate])->get();
+    //     $contributions = Contribution::whereBetween('created_at', [$startDate, $endDate])->get();
 
-        return collect(range(1, 12))->map(function ($month) use ($year, $contributions) {
-            $monthDate = Carbon::create($year, $month, 1);
-            $monthName = $monthDate->format('M');
+    //     return collect(range(1, 12))->map(function ($month) use ($year, $contributions) {
+    //         $monthDate = Carbon::create($year, $month, 1);
+    //         $monthName = $monthDate->format('M');
 
-            $count = $contributions->filter(function ($item) use ($monthDate) {
-                return $item->created_at->format('Y-m') === $monthDate->format('Y-m');
-            })->count();
+    //         $count = $contributions->filter(function ($item) use ($monthDate) {
+    //             return $item->created_at->format('Y-m') === $monthDate->format('Y-m');
+    //         })->count();
 
-            return [
-                'month' => $monthName,
-                'total' => $count,
-            ];
-        });
-    }
-
+    //         return [
+    //             'month' => $monthName,
+    //             'total' => $count,
+    //         ];
+    //     });
+    // }
 }

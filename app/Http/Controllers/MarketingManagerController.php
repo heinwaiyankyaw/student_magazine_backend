@@ -55,7 +55,7 @@ class MarketingManagerController extends Controller
     }
 
     public function selectedArticles() {
-        $articles = Contribution::where('active_flag', 1)->where('status', 'selected')->latest()->get();
+        $articles = Contribution::where('active_flag', 1)->where('status', 'selected')->with(['faculty:id,name','student:id,first_name,last_name'])->latest()->get();
         $response = new ResponseModel(
             'success',
             0,
@@ -96,9 +96,7 @@ class MarketingManagerController extends Controller
                 return response()->json($response);
             }
 
-
             $data = $contributions;
-
 
             $response = new ResponseModel(
                 (new Messages())->success,

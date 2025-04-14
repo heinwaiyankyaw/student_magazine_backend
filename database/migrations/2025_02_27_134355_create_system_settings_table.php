@@ -14,8 +14,8 @@ return new class extends Migration
         Schema::create('system_settings', function (Blueprint $table) {
             $table->id();
             $table->string('academic_year')->unique();
-            $table->date('closure_date');
-            $table->date('final_closure_date');
+            $table->date('closure_date')->nullable();
+            $table->date('final_closure_date')->nullable();
             $table->boolean('active_flag')->default(true);
             $table->timestamps();
             $table->unsignedBigInteger('createby');
