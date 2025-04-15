@@ -5,57 +5,67 @@ namespace App\Http\Controllers;
 use App\Models\Contribution;
 use App\Http\Helpers\ResponseModel;
 use App\Http\Helpers\Messages;
+use App\Models\Faculty;
+use App\Models\SystemSetting;
+use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use ZipArchive;
 use Storage;
 
 class MarketingManagerController extends Controller
 {
     // Dashboard statistics
-    public function index() {
+    public function index()
+    {
         try {
-            // Get total count of all contributions
-            $totalContributions = Contribution::count();
+            if (Auth::user()->role_id != 2) {
+                return $this->unauthorizedResponse();
+            }
 
-            // Get count of approved contributions (selected for publication)
-            $approvedContributions = Contribution::where('status', 'approved')->count();
+            // Role-based user count (students, coordinators, etc.)
+            $roleCounts = $this->countUserRoles();
 
-            // Get count of pending contributions
-            $pendingContributions = Contribution::where('status', 'pending')->count();
+            // Get data for past month
+            $oneMonthAgo = Carbon::now()->subMonth();
 
-            // Get count of unreviewed contributions
-            $unreviewedContributions = Contribution::whereNull('comments')->count();
-
-            // Prepare the data
+            // Prepare all response data
             $data = [
-                'total_contributions' => $totalContributions,
-                'approved_contributions' => $approvedContributions,
-                'pending_contributions' => $pendingContributions,
-                'unreviewed_contributions' => $unreviewedContributions,
+                'students'                    => $roleCounts['students'],
+                'coordinators'               => $roleCounts['coordinators'],
+                'faculties'                  => Faculty::count(),
+                'contributions'              => Contribution::count(),
+                'approved'                   => Contribution::where('status', 'selected')->count(),
+                'pending'                    => Contribution::where('status', 'pending')->count(),
+                'reviewed'                   => Contribution::where('status', 'reviewed')->count(),
+                'unreviewed'                 => Contribution::doesntHave('comments')->count(),
+                'rejected'                   => Contribution::where('status', 'rejected')->count(),
+                'setting'                    => SystemSetting::first() ?? [],
+                'past_month'                 => $this->getMonthlyStats($oneMonthAgo),
+                'contributionData'           => $this->calculateMonthlyContributions(),
+                'contributionDataByFaculty'  => $this->getContributionDataByFaculty(),
             ];
 
-            // ResponseModel to return to the view
-            $response = new ResponseModel(
-                (new Messages())->success,
-                true,
+            return response()->json(new ResponseModel(
+                "success",
+                0,
                 $data
-            );
-
-            return response()->json($response);
+            ));
         } catch (\Exception $e) {
-            // In case of an error, return a failure response
-            $response = new ResponseModel(
-                (new Messages())->fail,
-                false,
-                null
-            );
+            //Log::error('Dashboard index error: ' . $e->getMessage());
 
-            return response()->json($response); // Internal server error
+            return response()->json(new ResponseModel(
+                $e->getMessage(),
+                2,
+                null
+            ), 500);
         }
     }
 
-    public function selectedArticles() {
-        $articles = Contribution::where('active_flag', 1)->where('status', 'selected')->with(['faculty:id,name','student:id,first_name,last_name'])->latest()->get();
+    public function selectedArticles()
+    {
+        $articles = Contribution::where('active_flag', 1)->where('status', 'selected')->with(['faculty:id,name', 'student:id,first_name,last_name'])->latest()->get();
         $response = new ResponseModel(
             'success',
             0,
@@ -65,7 +75,8 @@ class MarketingManagerController extends Controller
     }
 
     // View all approved contributions
-    public function viewContributions(Request $request) {
+    public function viewContributions(Request $request)
+    {
         try {
             // Get filter criteria from the request
             $studentName = $request->input('student_name', null);
@@ -75,7 +86,7 @@ class MarketingManagerController extends Controller
             $query = Contribution::where('status', 'approved');
 
             if ($studentName) {
-                $query->whereHas('student', function($q) use ($studentName) {
+                $query->whereHas('student', function ($q) use ($studentName) {
                     $q->where('name', 'LIKE', '%' . $studentName . '%');
                 });
             }
@@ -117,7 +128,8 @@ class MarketingManagerController extends Controller
     }
 
     // Method for Downloading Selected Contributions as ZIP
-    public function downloadZip(Request $request) {
+    public function downloadZip(Request $request)
+    {
         try {
             // Get the list of selected contribution IDs from the request
             $selectedContributions = $request->input('contribution_ids', []);
@@ -194,7 +206,8 @@ class MarketingManagerController extends Controller
     }
 
     // Method for Statistics and Reports
-    public function statisticsAndReports() {
+    public function statisticsAndReports()
+    {
         try {
             // Number of contributions per faculty
             $contributionsPerFaculty = Contribution::selectRaw('faculty, COUNT(*) as contribution_count')
@@ -241,5 +254,83 @@ class MarketingManagerController extends Controller
             );
             return response()->json($response);
         }
+    }
+
+    public function calculateMonthlyContributions(): array
+    {
+        // Get contributions grouped by month with counts
+        $contributions = Contribution::selectRaw('MONTH(created_at) as month, COUNT(*) as total')
+            ->groupBy('month')
+            ->pluck('total', 'month');
+
+        // Initialize array for all 12 months
+        $result = [];
+        $monthNames = [
+            1 => "Jan",
+            2 => "Feb",
+            3 => "Mar",
+            4 => "Apr",
+            5 => "May",
+            6 => "Jun",
+            7 => "Jul",
+            8 => "Aug",
+            9 => "Sep",
+            10 => "Oct",
+            11 => "Nov",
+            12 => "Dec"
+        ];
+
+        foreach ($monthNames as $num => $name) {
+            $result[] = [
+                'name'  => $name,
+                'value' => $contributions[$num] ?? 0,
+            ];
+        }
+
+        return $result;
+    }
+
+    private function getContributionDataByFaculty()
+    {
+        return Faculty::withCount(['contributions'])->get()->map(function ($faculty) {
+            return [
+                'name' => $faculty->name,
+                'value' => $faculty->contributions_count,
+            ];
+        });
+    }
+
+    private function unauthorizedResponse()
+    {
+        return response()->json(new ResponseModel('Unauthorized', 1, null));
+    }
+
+    private function countUserRoles()
+    {
+        return [
+            'coordinators' => User::where('role_id', 3)->count(),
+            'students'     => User::where('role_id', 4)->count(),
+            'guests'       => User::where('role_id', 5)->count(),
+        ];
+    }
+
+    private function getMonthlyStats($oneMonthAgo)
+    {
+        return [
+            'total_submissions' => Contribution::where('created_at', '>=', $oneMonthAgo)->count(),
+            'pending_reviews'   => Contribution::where('created_at', '>=', $oneMonthAgo)->where('status', 'pending')->count(),
+            'approved'          => Contribution::where('created_at', '>=', $oneMonthAgo)->where('status', 'selected')->count(),
+        ];
+    }
+
+    private function getFacultyContributions()
+    {
+        $oneMonthAgo = Carbon::now()->subMonth();
+
+        return Faculty::select('name')->withCount(['contributions' => function ($query) use ($oneMonthAgo) {
+            $query->where('created_at', '>=', $oneMonthAgo);
+        }])
+            ->having('contributions_count', '>', 0)
+            ->get();
     }
 }

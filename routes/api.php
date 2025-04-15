@@ -6,6 +6,7 @@ use App\Http\Controllers\ContributionController;
 use App\Http\Controllers\CoordinatorController;
 use App\Http\Controllers\CoordinatorUserController;
 use App\Http\Controllers\FacultyController;
+use App\Http\Controllers\GuestController;
 use App\Http\Controllers\GuestUserController;
 use App\Http\Controllers\ManagerUserController;
 use App\Http\Controllers\MarketingManagerController;
@@ -135,7 +136,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // Marketing Manager Routes
 
     // Marketing Manager Dashboard
-    Route::get('/manager/dashboard', [MarketingManagerController::class, 'dashboard']);
+    Route::get('/manager/dashboard', [MarketingManagerController::class, 'index']);
 
     Route::get('/manager/selectedArticles', [MarketingManagerController::class, 'selectedArticles']);
 
@@ -166,6 +167,10 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/student/dashboard', [ContributionController::class, 'dashboard']);
 
     // Student Route End
+
+    // Guest Route Start
+
+    Route::get('/guest/articles', [GuestController::class, 'index']);
 
     // Notification Route
 

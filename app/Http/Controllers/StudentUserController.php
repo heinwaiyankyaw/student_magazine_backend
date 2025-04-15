@@ -6,6 +6,8 @@ use App\Http\Helpers\PasswordGenerator;
 use App\Http\Helpers\ResponseModel;
 use App\Http\Helpers\TransactionLogger;
 use App\Mail\UserRegisteredMail;
+use App\Models\Comment;
+use App\Models\Contribution;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;

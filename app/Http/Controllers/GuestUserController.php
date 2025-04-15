@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Helpers\PasswordGenerator;
 use App\Http\Helpers\ResponseModel;
 use App\Http\Helpers\TransactionLogger;
 use App\Mail\UserRegisteredMail;
@@ -34,21 +35,22 @@ class GuestUserController extends Controller
                 'last_name' => 'required',
                 'faculty_id' => 'required|integer|exists:faculties,id',
                 'email' => 'required|string|max:100|min:3|unique:users,email',
-                'password' => 'nullable|string|max:16|min:8',
             ]);
+
+            $generatedPassword = PasswordGenerator::generatePassword();
 
             $guest = User::create([
                 'first_name' => $data['first_name'],
                 'last_name' => $data['last_name'],
                 'email' => $data['email'],
-                'password' => bcrypt($data['password']),
+                'password' => bcrypt($generatedPassword),
                 'faculty_id' => $data['faculty_id'],
                 'role_id' => 5,
             ]);
 
             TransactionLogger::log('users', 'create', true, "Register New Guest '{$guest->email}'");
             
-            Mail::to($guest->email)->send(new UserRegisteredMail($guest, $data['password']));
+            Mail::to($guest->email)->send(new UserRegisteredMail($guest, $generatedPassword));
 
             $response = new ResponseModel(
                 'success',
