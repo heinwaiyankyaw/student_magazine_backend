@@ -3,11 +3,15 @@ namespace App\Http\Controllers;
 
 use App\Http\Helpers\ResponseModel;
 use App\Http\Helpers\TransactionLogger;
+use App\Mail\SubmitArticleMail;
 use App\Models\Comment;
 use App\Models\Contribution;
+use App\Models\Notification;
+use App\Models\User;
 use Aws\S3\S3Client;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
 
 class ContributionController extends Controller
 {
@@ -135,6 +139,7 @@ class ContributionController extends Controller
 
     public function uploadArticle(Request $request)
     {
+        $user = Auth::user();
         $data = $request->validate([
             'article'     => 'required|file|mimes:doc,docx,pdf|max:2048',
             'photos'      => 'array|min:1',
@@ -212,7 +217,23 @@ class ContributionController extends Controller
             'createby'     => Auth::id(),
         ]);
 
-        TransactionLogger::log('Contributions', 'upload', true, "Contribution was upload by'" . auth()->user()->first_name . " " . auth()->user()->last_name . "'");
+        $notification = Notification::create([
+            'title' => 'Article Submitted',
+            'message' => 'New Article Submitted in your faculty!',
+            'createby' => $user->id,
+        ]);
+
+        $coordinator = User::where('faculty_id', $data['faculty_id'])->where('role_id', 3)->first();
+
+        // Attach notification to student
+        $coordinator->notifications()->attach($notification->id, [
+            'is_read' => false, // Mark as unread
+            'createby' => $user->id,
+        ]);
+
+        Mail::to($coordinator->email)->send(new SubmitArticleMail($coordinator, $user));
+
+        TransactionLogger::log('Contributions', 'upload', true, "Contribution was upload by'" . $user->first_name . " " . $user->last_name . "'");
 
         $response = new ResponseModel(
             'success',

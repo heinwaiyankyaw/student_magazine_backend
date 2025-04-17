@@ -8,6 +8,7 @@ use App\Http\Helpers\TransactionLogger;
 use App\Mail\UserRegisteredMail;
 use App\Models\Comment;
 use App\Models\Contribution;
+use App\Models\SystemSetting;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
@@ -51,7 +52,7 @@ class StudentUserController extends Controller
             ]);
 
             TransactionLogger::log('users', 'create', true, "Register New Student '{$student->email}'");
-            
+
             Mail::to($student->email)->send(new UserRegisteredMail($student, $generatedPassword));
 
             $response = new ResponseModel(
@@ -149,44 +150,44 @@ class StudentUserController extends Controller
 
     public function editArticle(Request $request, $articleId)
     {
-    try {
-        $data = $request->validate([
-            'title' => 'required|string|max:255',
-            'content' => 'required|string',
-            'closure_date' => 'required|date',
-        ]);
+        try {
+            $data = $request->validate([
+                'title' => 'required|string|max:255',
+                'content' => 'required|string',
+                'closure_date' => 'required|date',
+            ]);
 
-        // Fetch article to check closure date
-        $article = Article::findOrFail($articleId);
+            // Fetch article to check closure date
+            $article = Article::findOrFail($articleId);
 
-        // Ensure the closure date is not passed
-        if (strtotime($article->closure_date) < strtotime(now())) {
+            // Ensure the closure date is not passed
+            if (strtotime($article->closure_date) < strtotime(now())) {
+                return response()->json([
+                    'status' => 1,
+                    'message' => 'Article editing is closed after the closure date.',
+                    'data' => null,
+                ], 400);
+            }
+
+            // Update the article
+            $article->update([
+                'title' => $data['title'],
+                'content' => $data['content'],
+                'closure_date' => $data['closure_date'],
+            ]);
+
+            return response()->json([
+                'status' => 0,
+                'message' => 'Article edited successfully.',
+                'data' => $article,
+            ], 200);
+        } catch (\Exception $e) {
             return response()->json([
                 'status' => 1,
-                'message' => 'Article editing is closed after the closure date.',
+                'message' => 'Error: ' . $e->getMessage(),
                 'data' => null,
-            ], 400);
+            ]);
         }
-
-        // Update the article
-        $article->update([
-            'title' => $data['title'],
-            'content' => $data['content'],
-            'closure_date' => $data['closure_date'],
-        ]);
-
-        return response()->json([
-            'status' => 0,
-            'message' => 'Article edited successfully.',
-            'data' => $article,
-        ], 200);
-    } catch (\Exception $e) {
-        return response()->json([
-            'status' => 1,
-            'message' => 'Error: ' . $e->getMessage(),
-            'data' => null,
-        ]);
-    }
     }
     // Method to get all comments for an article
     public function viewComments($articleId)
@@ -209,59 +210,85 @@ class StudentUserController extends Controller
         }
     }
 
-        // Method to allow student to reply to a comment
-        public function respondToComment(Request $request, $articleId, $commentId)
-        {
-            try {
-                $data = $request->validate([
-                    'response' => 'required|string',
-                ]);
+    // Method to allow student to reply to a comment
+    public function respondToComment(Request $request, $articleId, $commentId)
+    {
+        try {
+            $data = $request->validate([
+                'response' => 'required|string',
+            ]);
 
-                $comment = Comment::findOrFail($commentId);
-                $comment->responses()->create([
-                    'user_id' => auth()->user()->id,  // Assuming the user is logged in
-                    'response' => $data['response'],
-                ]);
+            $comment = Comment::findOrFail($commentId);
+            $comment->responses()->create([
+                'user_id' => auth()->user()->id,  // Assuming the user is logged in
+                'response' => $data['response'],
+            ]);
 
-                return response()->json([
-                    'status' => 0,
-                    'message' => 'Response submitted successfully.',
-                    'data' => null,
-                ], 200);
-            } catch (\Exception $e) {
-                return response()->json([
-                    'status' => 1,
-                    'message' => 'Error: ' . $e->getMessage(),
-                    'data' => null,
-                ]);
-            }
+            return response()->json([
+                'status' => 0,
+                'message' => 'Response submitted successfully.',
+                'data' => null,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 1,
+                'message' => 'Error: ' . $e->getMessage(),
+                'data' => null,
+            ]);
         }
+    }
 
-        public function dashboard()
-        {
-            try {
-                // Assuming the student has a user ID and related articles
-                $contributions = Contribution::where('user_id', auth()->user()->id)->get();
-                $comments = Comment::where('user_id', auth()->user()->id)->get();
+    public function dashboard()
+    {
+        $user = Auth::user();
+        try {
+            // Assuming the student has a user ID and related articles
+            $contributions = Contribution::where('user_id', $user->id)
+                ->latest()
+                ->take(5)
+                ->get();
 
-                $data = [
-                    'contributions' => $contributions,
-                    'comments' => $comments,
-                ];
+            $comments = Comment::where('contribution_id')->where('user_id', $user->id)
+                ->latest()
+                ->take(5)
+                ->get();
 
-                return response()->json([
-                    'status' => 0,
-                    'message' => 'Dashboard data fetched successfully.',
-                    'data' => $data,
-                ], 200);
-            } catch (\Exception $e) {
-                return response()->json([
-                    'status' => 1,
-                    'message' => 'Error: ' . $e->getMessage(),
-                    'data' => null,
-                ]);
-            }
+            $data = [
+                'contributions' => $contributions,
+                'comments' => $comments,
+                'setting'  => SystemSetting::first() ?? [],
+                'submitArticleStatus' => $this->getSubmitArticleStatus($user),
+            ];
+
+            return response()->json([
+                'status' => 0,
+                'message' => 'Dashboard data fetched successfully.',
+                'data' => $data,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 1,
+                'message' => 'Error: ' . $e->getMessage(),
+                'data' => null,
+            ]);
         }
+    }
 
-
+    private function getSubmitArticleStatus($user)
+    {
+        return [
+        ['name' => 'pending',
+            'value' => Contribution::where('status', 'pending')->where('user_id', $user->id)->count(),
+        ],
+        ['name' => 'reviewed',
+            'value' => Contribution::where('status', 'reviewed')->where('user_id', $user->id)->count(),
+        ],
+        ['name' => 'selected',
+            'value' => Contribution::where('status', 'selected')->where('user_id', $user->id)->count(),
+        ],
+        ['name' => 'rejected',
+            'value' => Contribution::where('status', 'rejected')->where('user_id', $user->id)->count(),
+        ],
+    ];
+    }
 }

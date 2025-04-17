@@ -164,7 +164,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     Route::post('/student/articles/{articleId}/comments', [ContributionController::class, 'addComment']);
 
-    Route::get('/student/dashboard', [ContributionController::class, 'dashboard']);
+    Route::get('/student/dashboard', [StudentUserController::class, 'dashboard']);
 
     // Student Route End
 
