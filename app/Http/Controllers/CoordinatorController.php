@@ -7,6 +7,7 @@ use App\Http\Helpers\ResponseModel;
 use App\Http\Helpers\TransactionLogger;
 use App\Models\Comment;
 use App\Models\Notification;
+use App\Models\SystemSetting;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -193,6 +194,51 @@ class CoordinatorController extends Controller
 
                     ];
                 }),
+            ];
+
+            // Prepare response
+            $response = new ResponseModel(
+                'success',
+                0,
+                $data);
+
+            return response()->json($response, 200);
+        } catch(\Exception $e) {
+            $response = new ResponseModel(
+                $e->getMessage(),
+                2,
+                null
+            );
+            return response()->json($response);
+        }
+    }
+
+    public function dashboard(){
+        try {
+            $user = Auth::user();
+
+            // Get latest contributions
+            $contributions = Contribution::where('contributions.active_flag', 1)
+                    ->where('contributions.faculty_id', $user->faculty_id)
+                    ->leftJoin('users', 'contributions.user_id', '=', 'users.id')
+                    ->leftJoin('faculties', 'contributions.faculty_id', '=', 'faculties.id')
+                    ->select('contributions.*', 'users.first_name', 'users.last_name', 'faculties.name as faculty_name')
+                    ->latest()
+                    ->take(5)
+                    ->get();
+
+            $data = [
+                'contributions' => $contributions,
+                'contributionCount' => Contribution::where('active_flag', 1)
+                                    ->where('faculty_id', $user->faculty_id)
+                                    ->count(),
+                'pendingCount' => Contribution::where('active_flag', 1)
+                                    ->where('faculty_id', $user->faculty_id)
+                                    ->where('status', 'pending')->count(),
+                'selectedCount' => Contribution::where('active_flag', 1)
+                                    ->where('faculty_id', $user->faculty_id)
+                                    ->where('status', 'selected')->count(),
+                'systemSetting' => SystemSetting::first() ?? [],
             ];
 
             // Prepare response

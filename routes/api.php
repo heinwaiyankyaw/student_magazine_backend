@@ -128,6 +128,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
     //View Contribution Detail
     Route::get('/coordinator/detail/{id}', [CoordinatorController::class, 'viewContributionDetail']);
 
+    //Get Dashboard Data
+    Route::get('/coordinator/dashboard', [CoordinatorController::class, 'dashboard']);
+
     //Make Comment
     Route::post('/coordinator/comment/add', [CoordinatorController::class, 'addComment']);
 
