@@ -7,6 +7,7 @@ use App\Mail\SubmitArticleMail;
 use App\Models\Comment;
 use App\Models\Contribution;
 use App\Models\Notification;
+use App\Models\SystemSetting;
 use App\Models\User;
 use Aws\S3\S3Client;
 use Illuminate\Http\Request;
@@ -42,10 +43,15 @@ class ContributionController extends Controller
             return response()->json($response);
         }
 
+        $data = [
+            'systemSetting' => SystemSetting::first() ?? [],
+            'contributions' => $contributions,
+        ];
+
         $response = new ResponseModel(
             'success',
             0,
-            $contributions
+            $data
         );
 
         return response()->json($response, 200);
