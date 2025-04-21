@@ -241,23 +241,49 @@ class StudentUserController extends Controller
     public function dashboard()
     {
         $user = Auth::user();
+
         try {
-            // Assuming the student has a user ID and related articles
+            // Get the latest 2 contributions by the authenticated student
             $contributions = Contribution::where('user_id', $user->id)
-                ->latest()
-                ->take(5)
+                ->latest('created_at') // Order by created_at descending
+                ->take(2) // Limit to 2
                 ->get();
 
-            $comments = Comment::where('contribution_id')->where('user_id', $user->id)
+            $contributionIds = $contributions->pluck('id');
+
+            // Get the latest 1 comment made by a coordinator on the student's contributions
+            $latestCoordinatorComment = Comment::whereIn('contribution_id', $contributionIds)
+                ->whereHas('user.role', function ($query) {
+                    $query->where('name', 'coordinator');
+                })
+                ->with(['user' => function ($q) {
+                    $q->select('id', 'first_name', 'last_name'); // Select first_name and last_name
+                }])
                 ->latest()
-                ->take(5)
-                ->get();
+                ->first();
+
+            // Get submitArticleStatus for status counts
+            $submitArticleStatus = $this->getSubmitArticleStatus($user);
+
+            // Calculate statistics for totalSubmissions, pendingReview, and approved
+            $totalSubmissions = Contribution::where('user_id', $user->id)->count();
+            $pendingReview = Contribution::where('user_id', $user->id)
+                ->where('status', 'pending')
+                ->count();
+            $approved = Contribution::where('user_id', $user->id)
+                ->where('status', 'selected') // Assuming 'selected' is 'approved'
+                ->count();
 
             $data = [
-                'contributions' => $contributions,
-                'comments' => $comments,
-                'setting'  => SystemSetting::first() ?? [],
-                'submitArticleStatus' => $this->getSubmitArticleStatus($user),
+                'latestCoordinatorComment' => $latestCoordinatorComment,
+                'setting' => SystemSetting::first() ?? [],
+                'statistics' => [
+                    'contributions' => $contributions,
+                    'statusCounts' => $submitArticleStatus,
+                    'totalSubmissions' => $totalSubmissions,
+                    'pendingReview' => $pendingReview,
+                    'approved' => $approved,
+                ],
             ];
 
             return response()->json([
@@ -274,21 +300,27 @@ class StudentUserController extends Controller
         }
     }
 
+
+
     private function getSubmitArticleStatus($user)
     {
         return [
-        ['name' => 'pending',
-            'value' => Contribution::where('status', 'pending')->where('user_id', $user->id)->count(),
-        ],
-        ['name' => 'reviewed',
-            'value' => Contribution::where('status', 'reviewed')->where('user_id', $user->id)->count(),
-        ],
-        ['name' => 'selected',
-            'value' => Contribution::where('status', 'selected')->where('user_id', $user->id)->count(),
-        ],
-        ['name' => 'rejected',
-            'value' => Contribution::where('status', 'rejected')->where('user_id', $user->id)->count(),
-        ],
-    ];
+            [
+                'name' => 'pending',
+                'value' => Contribution::where('status', 'pending')->where('user_id', $user->id)->count(),
+            ],
+            [
+                'name' => 'reviewed',
+                'value' => Contribution::where('status', 'reviewed')->where('user_id', $user->id)->count(),
+            ],
+            [
+                'name' => 'selected',
+                'value' => Contribution::where('status', 'selected')->where('user_id', $user->id)->count(),
+            ],
+            [
+                'name' => 'rejected',
+                'value' => Contribution::where('status', 'rejected')->where('user_id', $user->id)->count(),
+            ],
+        ];
     }
 }
