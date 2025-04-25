@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Http\Controllers;
 
 use App\Http\Helpers\ResponseModel;
@@ -61,6 +60,10 @@ class AdminAuthController extends Controller
                 4 => "student",
                 5 => "guest",
             ];
+            $currentDateTime = Carbon::now();
+            $user->update([
+                'last_login_at' => $currentDateTime,
+            ]);
 
             $response = new ResponseModel(
                 'Login successful',
@@ -285,17 +288,17 @@ class AdminAuthController extends Controller
 
         // Response structure
         $data = [
-            'students'       => $roleCounts['students'],
-            'coordinators'   => $roleCounts['coordinators'],
-            'managers'       => $roleCounts['managers'],
-            'guests'         => $roleCounts['guests'],
-            'faculties'      => Faculty::count(),
-            'contributions'  => Contribution::count(),
-            'approved'       => Contribution::where('status', 'selected')->count(),
-            'rejected'       => Contribution::where('status', 'rejected')->count(),
-            'setting'        => SystemSetting::first(),
-            'past_month'     => $this->getMonthlyStats($oneMonthAgo),
-            'contributionData' => $this->calculateMonthlyContributions(),
+            'students'                  => $roleCounts['students'],
+            'coordinators'              => $roleCounts['coordinators'],
+            'managers'                  => $roleCounts['managers'],
+            'guests'                    => $roleCounts['guests'],
+            'faculties'                 => Faculty::count(),
+            'contributions'             => Contribution::count(),
+            'approved'                  => Contribution::where('status', 'selected')->count(),
+            'rejected'                  => Contribution::where('status', 'rejected')->count(),
+            'setting'                   => SystemSetting::first(),
+            'past_month'                => $this->getMonthlyStats($oneMonthAgo),
+            'contributionData'          => $this->calculateMonthlyContributions(),
             'contributionDataByFaculty' => $this->getContributionDataByFaculty(),
         ];
 
@@ -310,20 +313,20 @@ class AdminAuthController extends Controller
             ->pluck('total', 'month');
 
         // Initialize array for all 12 months
-        $result = [];
+        $result     = [];
         $monthNames = [
-            1 => "Jan",
-            2 => "Feb",
-            3 => "Mar",
-            4 => "Apr",
-            5 => "May",
-            6 => "Jun",
-            7 => "Jul",
-            8 => "Aug",
-            9 => "Sep",
+            1  => "Jan",
+            2  => "Feb",
+            3  => "Mar",
+            4  => "Apr",
+            5  => "May",
+            6  => "Jun",
+            7  => "Jul",
+            8  => "Aug",
+            9  => "Sep",
             10 => "Oct",
             11 => "Nov",
-            12 => "Dec"
+            12 => "Dec",
         ];
 
         foreach ($monthNames as $num => $name) {
@@ -337,14 +340,14 @@ class AdminAuthController extends Controller
     }
 
     private function getContributionDataByFaculty()
-{
-    return Faculty::withCount(['contributions'])->get()->map(function ($faculty) {
-        return [
-            'name' => $faculty->name,
-            'value' => $faculty->contributions_count,
-        ];
-    });
-}
+    {
+        return Faculty::withCount(['contributions'])->get()->map(function ($faculty) {
+            return [
+                'name'  => $faculty->name,
+                'value' => $faculty->contributions_count,
+            ];
+        });
+    }
 
     private function unauthorizedResponse()
     {

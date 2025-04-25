@@ -1,15 +1,17 @@
 <?php
-
 namespace App\Http\Controllers;
 
 use App\Http\Helpers\PasswordGenerator;
 use App\Http\Helpers\ResponseModel;
 use App\Http\Helpers\TransactionLogger;
+use App\Mail\GuestRegisterAlert;
 use App\Mail\UserRegisteredMail;
+use App\Models\Faculty;
+use App\Models\Notification;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
 
 class GuestUserController extends Controller
 {
@@ -32,24 +34,43 @@ class GuestUserController extends Controller
             // Validate the request
             $data = $request->validate([
                 'first_name' => 'required',
-                'last_name' => 'required',
+                'last_name'  => 'required',
                 'faculty_id' => 'required|integer|exists:faculties,id',
-                'email' => 'required|string|max:100|min:3|unique:users,email',
+                'email'      => 'required|string|max:100|min:3|unique:users,email',
             ]);
 
             $generatedPassword = PasswordGenerator::generatePassword();
 
             $guest = User::create([
                 'first_name' => $data['first_name'],
-                'last_name' => $data['last_name'],
-                'email' => $data['email'],
-                'password' => bcrypt($generatedPassword),
+                'last_name'  => $data['last_name'],
+                'email'      => $data['email'],
+                'password'   => bcrypt($generatedPassword),
                 'faculty_id' => $data['faculty_id'],
-                'role_id' => 5,
+                'role_id'    => 5,
             ]);
 
+            $faculty = Faculty::where("id", $data['faculty_id'])->with('users')->first();
+
+            foreach ($faculty->users as $user) {
+                if ($user->role_id == 3) {
+                    $notification = Notification::create([
+                        'title'    => 'New Guest User',
+                        'message'  => 'A new guest user has been registered.',
+                        'createby' => Auth::id(),
+                    ]);
+
+                    $user->notifications()->attach($notification->id, [
+                        'user_id'  => $user->id,
+                        'is_read'  => false,
+                        'createby' => $user->id,
+                    ]);
+                    Mail::to($user->email)->send(new GuestRegisterAlert($guest, $user));
+
+                }
+            }
             TransactionLogger::log('users', 'create', true, "Register New Guest '{$guest->email}'");
-            
+
             Mail::to($guest->email)->send(new UserRegisteredMail($guest, $generatedPassword));
 
             $response = new ResponseModel(
@@ -75,12 +96,12 @@ class GuestUserController extends Controller
         try {
             // Validate the request
             $data = $request->validate([
-                'id' => 'required',
+                'id'         => 'required',
                 'first_name' => 'required',
-                'last_name' => 'required',
+                'last_name'  => 'required',
                 'faculty_id' => 'required|integer|exists:faculties,id',
-                'email' => 'required|string|max:100|min:3',
-                'password' => 'nullable|string|max:16|min:8',
+                'email'      => 'required|string|max:100|min:3',
+                'password'   => 'nullable|string|max:16|min:8',
             ]);
 
             $guest = User::findOrFail($data['id']);
@@ -96,13 +117,13 @@ class GuestUserController extends Controller
 
                 $updated = [
                     'first_name' => $data['first_name'],
-                    'last_name' => $data['last_name'],
-                    'email' => $data['email'],
+                    'last_name'  => $data['last_name'],
+                    'email'      => $data['email'],
                     'faculty_id' => $data['faculty_id'],
-                    'role_id' => 5,
+                    'role_id'    => 5,
                 ];
 
-                if (!empty($data['password'])) {
+                if (! empty($data['password'])) {
                     $updated['password'] = bcrypt($data['password']);
                 }
 
@@ -130,22 +151,22 @@ class GuestUserController extends Controller
     public function delete($id)
     {
         try {
-            $guest = User::findOrFail($id);
+            $guest              = User::findOrFail($id);
             $guest->active_flag = 0;
-            $guest->updateby = Auth::id();
+            $guest->updateby    = Auth::id();
             $guest->update();
             TransactionLogger::log('users', 'delete', true, "Delete Guest '{$guest->email}'");
             return response()->json([
-                'status' => 0,
+                'status'  => 0,
                 'message' => 'User deleted successfully.',
-                'data' => null
+                'data'    => null,
             ], 200);
         } catch (\Exception $e) {
             TransactionLogger::log('users', 'delete', false, $e->getMessage());
             return response()->json([
-                'status' => 1,
+                'status'  => 1,
                 'message' => 'Failed to delete guest: ' . $e->getMessage(),
-                'data' => null
+                'data'    => null,
             ]);
         }
     }
