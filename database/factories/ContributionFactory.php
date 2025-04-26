@@ -16,9 +16,15 @@ class ContributionFactory extends Factory
      */
     public function definition(): array
     {
-        // Get a random date within the past 2 months
-        $createdAt = Carbon::now()->subDays(rand(0, 60))->subHours(rand(0, 23))->subMinutes(rand(0, 59));
-        $userIds   = $this->faker->numberBetween(5, 7);
+        // Get a random date within the past 3 years (current year + 2 previous years)
+        $createdAt = Carbon::now()
+            ->subYears(rand(0, 2))  // 0, 1, or 2 years back
+            ->subDays(rand(0, 365)) // Subtract 0-365 days
+            ->subHours(rand(0, 23))
+            ->subMinutes(rand(0, 59));
+
+        $userIds = $this->faker->numberBetween(5, 7);
+
         return [
             'title'        => $this->faker->sentence,
             'description'  => $this->faker->paragraphs(3, true),

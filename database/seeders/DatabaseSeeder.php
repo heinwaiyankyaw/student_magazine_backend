@@ -19,6 +19,6 @@ class DatabaseSeeder extends Seeder
             ContributionSeeder::class,
             CommentSeeder::class,
         ]);
-        Contribution::factory(50)->create();
+        Contribution::factory(100)->create();
     }
 }

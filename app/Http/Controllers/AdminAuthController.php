@@ -406,4 +406,98 @@ class AdminAuthController extends Controller
     //         ];
     //     });
     // }
+
+    // public function getContributionsByYear(Request $request)
+    // {
+    //     try {
+    //         $year = $request->input('year', Carbon::now()->year);
+
+    //         $contributions = Contribution::whereYear('created_at', $year)
+    //             ->get();
+
+    //         return response()->json(new ResponseModel('success', 0, $contributions));
+    //     } catch (\Exception $e) {
+    //         return response()->json(new ResponseModel($e->getMessage(), 2, null));
+    //     }
+    // }
+    public function getContributionsByYear(Request $request)
+    {
+        try {
+            $year = $request->input('year', Carbon::now()->year);
+
+            $contributions = Contribution::with(['faculty', 'student'])
+                ->whereYear('created_at', $year)
+                ->get();
+
+            $grouped = $contributions->groupBy('faculty.name');
+
+            $result = $grouped->map(function ($items, $facultyName) use ($contributions) {
+                $studentCount = $items->groupBy('user_id')->count();
+
+                return [
+                    'faculty'                 => $facultyName,
+                    'contribution_count'      => $items->count(),
+                    'student_count'           => $studentCount,
+                    'contribution_percentage' => $contributions->count() > 0
+                    ? round(($items->count() / $contributions->count()) * 100, 2)
+                    : 0,
+                ];
+            })->values();
+
+            return response()->json(new ResponseModel('success', 0, $result));
+        } catch (\Exception $e) {
+            return response()->json(new ResponseModel($e->getMessage(), 2, null));
+        }
+    }
+
+    public function getCommentExceptionReports(Request $request)
+    {
+        try {
+            $currentDate = Carbon::now();
+            $cutoffDate  = $currentDate->copy()->subDays(14);
+
+            $contributions = Contribution::with(['comments', 'faculty'])
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            $reports = $contributions->map(function ($contribution) use ($currentDate, $cutoffDate) {
+                $hasComments      = $contribution->comments->isNotEmpty();
+                $hasRecentComment = $contribution->comments->contains('created_at', '>=', $cutoffDate);
+
+                $status = 'normal';
+                if (! $hasComments) {
+                    $status = 'no_comments';
+                } elseif (! $hasRecentComment && $contribution->created_at <= $cutoffDate) {
+                    $status = 'no_comments_after_14_days';
+                }
+
+                return [
+                    'contribution_id'     => $contribution->id,
+                    'title'               => $contribution->title,
+                    'faculty'             => $contribution->faculty->name ?? 'Unknown',
+                    'created_at'          => $contribution->created_at->format('Y-m-d H:i:s'),
+                    'days_since_creation' => $contribution->created_at->diffInDays($currentDate),
+                    'status'              => $status,
+                ];
+            });
+
+            $exceptions = $reports->filter(function ($report) {
+                return $report['status'] !== 'normal';
+            })->values();
+
+            return response()->json(new ResponseModel(
+                'success',
+                0,
+                [
+                    'total_contributions'                   => $contributions->count(),
+                    'contributions_without_comments'        => $reports->where('status', 'no_comments')->count(),
+                    'contributions_without_recent_comments' => $reports->where('status', 'no_comments_after_14_days')->count(),
+                    'exception_reports'                     => $exceptions,
+                ]
+            ));
+
+        } catch (\Exception $e) {
+            return response()->json(new ResponseModel($e->getMessage(), 2, null));
+        }
+    }
 }

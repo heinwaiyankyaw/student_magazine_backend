@@ -28,6 +28,10 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     Route::get('/admin/dashboard', [AdminAuthController::class, 'countData']);
 
+    Route::get('/admin/contributions-by-year', [AdminAuthController::class, 'getContributionsByYear']);
+
+    Route::get('/admin/comment-contributions-report', [AdminAuthController::class, 'getCommentExceptionReports']);
+
     //User Management
 
     //Admin User Management
