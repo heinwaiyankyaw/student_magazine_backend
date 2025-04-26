@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use App\Http\Helpers\ResponseModel;
@@ -175,105 +176,6 @@ class AdminAuthController extends Controller
         }
     }
 
-    // public function countData()
-    // {
-    //     $students       = User::where('role_id', 4)->count();
-    //     $coordinators   = User::where('role_id', 3)->count();
-    //     $managers       = User::where('role_id', 2)->count();
-    //     $guests         = User::where('role_id', 5)->count();
-    //     $constributions = Contribution::count();
-    //     $faculties      = Faculty::count();
-
-    //     $oneMonthAgo = Carbon::now()->subMonth();
-
-    //     // Total submissions in the past month
-    //     $totalSubmissions = Contribution::where('created_at', '>=', $oneMonthAgo)->count();
-
-    //     // Pending reviews in the past month
-    //     $pendingReviews = Contribution::where('created_at', '>=', $oneMonthAgo)
-    //         ->where('status', 'pending')
-    //         ->count();
-
-    //     // Approved (selected) in the past month
-    //     $approvedSubmissions = Contribution::where('created_at', '>=', $oneMonthAgo)
-    //         ->where('status', 'selected')
-    //         ->count();
-
-    //     $faculties = Faculty::withCount(['contributions' => function ($query) use ($oneMonthAgo) {
-    //         $query->where('created_at', '>=', $oneMonthAgo);
-    //     }])
-    //         ->having('contributions_count', '>', 0)
-    //         ->get();
-
-    //     $donurtChart = [
-    //         'labels' => $faculties->pluck('name'),
-    //         'data'   => $faculties->pluck('contributions_count'),
-    //     ];
-
-    //     $monthlyCounts = $this->calculateMonthlyContributions();
-
-    //     $barChart = [
-    //         'labels' => $monthlyCounts->pluck('month'),
-    //         'data'   => $monthlyCounts->pluck('total'),
-    //     ];
-
-    //     if (Auth::user()->role_id != 1) {
-    //         $response = new ResponseModel(
-    //             'Unauthorized',
-    //             1,
-    //             null
-    //         );
-    //         return response()->json($response);
-    //     }
-
-    //     $data = [
-    //         'students'       => $students,
-    //         'coordinators'   => $coordinators,
-    //         'managers'       => $managers,
-    //         'guests'         => $guests,
-    //         'constributions' => $constributions,
-    //         'faculties'      => $faculties,
-    //         'past_month'     => [
-    //             'total_submissions' => $totalSubmissions,
-    //             'pending_reviews'   => $pendingReviews,
-    //             'approved'          => $approvedSubmissions,
-    //         ],
-    //         'donut_chart'    => [
-    //             $donurtChart,
-    //         ],
-    //         'bar_chart'      => [
-    //             $barChart,
-    //         ],
-    //     ];
-    //     $response = new ResponseModel(
-    //         'success',
-    //         0,
-    //         $data
-    //     );
-    //     return response()->json($response);
-    // }
-
-    // private function calculateMonthlyContributions()
-    // {
-    //     $startDate = Carbon::now()->subMonths(11)->startOfMonth();
-    //     $endDate   = Carbon::now()->endOfMonth();
-
-    //     $contributions = Contribution::whereBetween('created_at', [$startDate, $endDate])->get();
-
-    //     return collect(range(0, 11))->map(function ($i) use ($contributions) {
-    //         $date      = Carbon::now()->subMonths(11 - $i);
-    //         $monthName = $date->format('M');
-    //         $count     = $contributions->filter(function ($item) use ($date) {
-    //             return $item->created_at->format('Y-m') === $date->format('Y-m');
-    //         })->count();
-
-    //         return [
-    //             'month' => $monthName,
-    //             'total' => $count,
-    //         ];
-    //     });
-    // }
-
     public function countData()
     {
         if (Auth::user()->role_id != 1) {
@@ -286,6 +188,13 @@ class AdminAuthController extends Controller
         // Past month statistics
         $oneMonthAgo = Carbon::now()->subMonth();
 
+        $contributions = $this->fetchContributionsWithComments();
+
+        $reports = $this->analyzeContributionComments($contributions);
+
+        $contributionsWithoutComment = $this->getContributionsWithoutComments($reports);
+        $contributionsWithoutCommentAfter14 = $this->getContributionsWithoutRecentComments($reports);
+
         // Response structure
         $data = [
             'students'                  => $roleCounts['students'],
@@ -297,12 +206,53 @@ class AdminAuthController extends Controller
             'approved'                  => Contribution::where('status', 'selected')->count(),
             'rejected'                  => Contribution::where('status', 'rejected')->count(),
             'setting'                   => SystemSetting::first(),
-            'past_month'                => $this->getMonthlyStats($oneMonthAgo),
+            // 'past_month'                => $this->getMonthlyStats($oneMonthAgo),
             'contributionData'          => $this->calculateMonthlyContributions(),
             'contributionDataByFaculty' => $this->getContributionDataByFaculty(),
+            'contributionWithoutComment' => $contributionsWithoutComment,
+            'contributionWithoutCommentAfter14' =>  $contributionsWithoutCommentAfter14,
         ];
 
         return response()->json(new ResponseModel('success', 0, $data));
+    }
+
+    public function ContributionsByFaultyEachYear(): array
+    {
+        $contributions = Contribution::selectRaw('YEAR(created_at) as year, MONTH(created_at) as month, COUNT(*) as total')
+            ->groupBy('year', 'month')
+            ->orderBy('year')
+            ->orderBy('month')
+            ->get();
+
+        $result = [];
+
+        foreach ($contributions as $item) {
+            $year = $item->year;
+            $month = $item->month;
+            $total = $item->total;
+
+            $monthName = match ($month) {
+                1  => "Jan",
+                2  => "Feb",
+                3  => "Mar",
+                4  => "Apr",
+                5  => "May",
+                6  => "Jun",
+                7  => "Jul",
+                8  => "Aug",
+                9  => "Sep",
+                10 => "Oct",
+                11 => "Nov",
+                12 => "Dec",
+            };
+
+            $result[] = [
+                'year'  => $year,
+                'name'  => $monthName,
+                'value' => $total,
+            ];
+        }
+        return $result;
     }
 
     public function calculateMonthlyContributions(): array
@@ -341,12 +291,107 @@ class AdminAuthController extends Controller
 
     private function getContributionDataByFaculty()
     {
-        return Faculty::withCount(['contributions'])->get()->map(function ($faculty) {
+        // Fetch contributions grouped by faculty, year, and user
+        $contributions = Contribution::selectRaw('faculty_id, YEAR(created_at) as year, user_id')
+            ->get();
+
+        // Step 1: Total contributions per year
+        $totalPerYear = $contributions
+            ->groupBy('year')
+            ->map(fn($items) => $items->count());
+
+        // Step 2: Build faculty-year-counts
+        $facultyYearCounts = [];
+        $facultyYearContributors = [];
+
+        foreach ($contributions as $item) {
+            $facultyId = $item->faculty_id;
+            $year = $item->year;
+            $userId = $item->user_id;
+
+            // Count contributions
+            if (!isset($facultyYearCounts[$facultyId][$year])) {
+                $facultyYearCounts[$facultyId][$year] = 0;
+            }
+            $facultyYearCounts[$facultyId][$year]++;
+
+            // Count contributors (unique user IDs)
+            $facultyYearContributors[$facultyId][$year][$userId] = true;
+        }
+
+        // Step 3: Fetch faculties
+        $faculties = Faculty::all();
+
+        // Step 4: Map result with percentage and contributor count
+        $result = [];
+
+        foreach ($faculties as $faculty) {
+            foreach ([2023, 2024, 2025] as $year) {
+                $value = $facultyYearCounts[$faculty->id][$year] ?? 0;
+                $yearTotal = $totalPerYear[$year] ?? 0;
+                $contributorIds = $facultyYearContributors[$faculty->id][$year] ?? [];
+                $contributors = count($contributorIds);
+
+                $percentage = $yearTotal > 0 ? round(($value / $yearTotal) * 100, 2) : 0;
+
+                $result[] = [
+                    'faculty'      => $faculty->name,
+                    'year'         => $year,
+                    'value'        => $value,
+                    'percentage'   => $percentage,
+                    'contributors' => $contributors,
+                ];
+            }
+        }
+        return $result;
+    }
+
+    private function fetchContributionsWithComments()
+    {
+        return Contribution::with(['comments', 'faculty'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+    }
+
+    private function analyzeContributionComments($contributions)
+    {
+        $currentDate = Carbon::now();
+        $cutoffDate  = $currentDate->copy()->subDays(14);
+
+        return $contributions->map(function ($contribution) use ($currentDate, $cutoffDate) {
+            $hasComments      = $contribution->comments->isNotEmpty();
+            $hasRecentComment = $contribution->comments->contains(function ($comment) use ($cutoffDate) {
+                return $comment->created_at >= $cutoffDate;
+            });
+
+            $status = 'normal';
+            if (! $hasComments) {
+                $status = 'no_comments';
+            } elseif (! $hasRecentComment && $contribution->created_at <= $cutoffDate) {
+                $status = 'no_comments_after_14_days';
+            }
+
             return [
-                'name'  => $faculty->name,
-                'value' => $faculty->contributions_count,
+                'id'          => $contribution->id,
+                'title'       => $contribution->title,
+                'description' => $contribution->description,
+                'faculty'     => $contribution->faculty->name ?? 'Unknown',
+                'contributor' => $contribution->student->email ?? 'UnKnown',
+                'created_at'  => $contribution->created_at->format('Y-m-d H:i:s'),
+                'status'      => $status,
+                'created_at'  => $contribution->created_at,
             ];
         });
+    }
+
+    private function getContributionsWithoutComments($reports)
+    {
+        return $reports->where('status', 'no_comments')->values();
+    }
+
+    private function getContributionsWithoutRecentComments($reports)
+    {
+        return $reports->where('status', 'no_comments_after_14_days')->values();
     }
 
     private function unauthorizedResponse()
@@ -384,42 +429,6 @@ class AdminAuthController extends Controller
             ->get();
     }
 
-    // private function calculateMonthlyContributions()
-    // {
-    //     $year      = Carbon::now()->year;
-    //     $startDate = Carbon::create($year, 1, 1)->startOfMonth();
-    //     $endDate   = Carbon::create($year, 12, 31)->endOfMonth();
-
-    //     $contributions = Contribution::whereBetween('created_at', [$startDate, $endDate])->get();
-
-    //     return collect(range(1, 12))->map(function ($month) use ($year, $contributions) {
-    //         $monthDate = Carbon::create($year, $month, 1);
-    //         $monthName = $monthDate->format('M');
-
-    //         $count = $contributions->filter(function ($item) use ($monthDate) {
-    //             return $item->created_at->format('Y-m') === $monthDate->format('Y-m');
-    //         })->count();
-
-    //         return [
-    //             'month' => $monthName,
-    //             'total' => $count,
-    //         ];
-    //     });
-    // }
-
-    // public function getContributionsByYear(Request $request)
-    // {
-    //     try {
-    //         $year = $request->input('year', Carbon::now()->year);
-
-    //         $contributions = Contribution::whereYear('created_at', $year)
-    //             ->get();
-
-    //         return response()->json(new ResponseModel('success', 0, $contributions));
-    //     } catch (\Exception $e) {
-    //         return response()->json(new ResponseModel($e->getMessage(), 2, null));
-    //     }
-    // }
     public function getContributionsByYear(Request $request)
     {
         try {
@@ -439,8 +448,8 @@ class AdminAuthController extends Controller
                     'contribution_count'      => $items->count(),
                     'student_count'           => $studentCount,
                     'contribution_percentage' => $contributions->count() > 0
-                    ? round(($items->count() / $contributions->count()) * 100, 2)
-                    : 0,
+                        ? round(($items->count() / $contributions->count()) * 100, 2)
+                        : 0,
                 ];
             })->values();
 
@@ -495,7 +504,6 @@ class AdminAuthController extends Controller
                     'exception_reports'                     => $exceptions,
                 ]
             ));
-
         } catch (\Exception $e) {
             return response()->json(new ResponseModel($e->getMessage(), 2, null));
         }

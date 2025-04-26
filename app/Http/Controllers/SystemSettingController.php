@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Helpers\ResponseModel;
+use App\Http\Helpers\TransactionLogger;
 use App\Models\Notification;
 use App\Models\SystemSetting;
 use Carbon\Carbon;
@@ -51,6 +52,8 @@ class SystemSettingController extends Controller
                 'message' => "Academic Year: {$setting->academic_year}, Submission Closure Date: {$setting->closure_date}, Final Closure Date: {$setting->final_closure_date}",
                 'createby' => $user->id,
             ]);
+
+            TransactionLogger::log('system-setting', 'update', true, "Update System Setting'");
 
             for ($i = 2; $i <= 5; $i++) {
                 // Attach notification 

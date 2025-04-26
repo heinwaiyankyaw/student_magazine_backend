@@ -2,10 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Helpers\PasswordGenerator;
 use App\Http\Helpers\ResponseModel;
 use App\Http\Helpers\TransactionLogger;
+use App\Mail\UserRegisteredMail;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
 
 class AdminUserController extends Controller
 {
@@ -30,19 +34,23 @@ class AdminUserController extends Controller
                 'first_name' => 'required',
                 'last_name' => 'required',
                 'email' => 'required|string|max:100|min:3|unique:users,email',
-                'password' => 'nullable|string|max:16|min:8',
             ]);
+
+            $generatedPassword = PasswordGenerator::generatePassword();
 
             // Create the employee record
             $admin = User::create([
                 'first_name' => $data['first_name'],
                 'last_name' => $data['last_name'],
                 'email' => $data['email'],
-                'password' => bcrypt($data['password']),
-                'role_id' => 2,
+                'password' => bcrypt($generatedPassword),
+                'role_id' => 1,
+                'createby' => Auth::id(),
             ]);
 
             TransactionLogger::log('users', 'create', true, "Register New Admin '{$admin->email}'");
+
+            Mail::to($admin->email)->send(new UserRegisteredMail($admin, $generatedPassword));
 
             // Prepare the response
             $response = new ResponseModel(
