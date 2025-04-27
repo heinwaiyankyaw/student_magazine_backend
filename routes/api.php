@@ -163,7 +163,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     Route::get('/student/contributions/{id}', [ContributionController::class, 'getContributionByContributionID']);
 
-    Route::post('/student/articles/{id}/edit', [ContributionController::class, 'editArticle']);
+    Route::post('/student/articles/edit', [ContributionController::class, 'editArticle']);
 
     Route::get('/student/articles/{id}/comments', [ContributionController::class, 'viewComments']);
 
