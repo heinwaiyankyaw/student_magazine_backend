@@ -66,7 +66,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h2>New Gust Register</h2>
+            <h2>New Guest Register</h2>
         </div>
         <div class="content">
             <p>Dear <strong class="highlight">{{ $faculty_name }}</strong> Coordinator,</p>
