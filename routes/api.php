@@ -177,6 +177,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     // Guest Route Start
 
+    //Get Dashboard Data
+    Route::get('/guest/dashboard', [GuestController::class, 'dashboard']);
+
     Route::get('/guest/articles', [GuestController::class, 'index']);
 
     // Notification Route

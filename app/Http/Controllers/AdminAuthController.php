@@ -52,6 +52,7 @@ class AdminAuthController extends Controller
                 'faculty_id'         => $user->faculty_id,
                 'role_name'          => optional($user->role)->name ?? "Unknown Role",
                 'faculty_name'       => optional($user->faculty)->name ?? null,
+                'is_login'           => $user->last_login_at !== null,
             ];
 
             $roles = [
