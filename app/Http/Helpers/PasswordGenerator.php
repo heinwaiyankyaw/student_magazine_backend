@@ -9,7 +9,7 @@ class PasswordGenerator {
     $uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     $lowercase = 'abcdefghijklmnopqrstuvwxyz';
     $numbers = '0123456789';
-    $specialChars = '!@#$%^&*()-_=+<>';
+    $specialChars = '!@#$%^&*()-_=+';
 
     $password = 
         $uppercase[random_int(0, strlen($uppercase) - 1)] .
