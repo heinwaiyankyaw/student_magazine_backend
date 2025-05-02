@@ -10,6 +10,7 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 class AdminAuthController extends Controller
@@ -196,6 +197,59 @@ class AdminAuthController extends Controller
         $contributionsWithoutComment = $this->getContributionsWithoutComments($reports);
         $contributionsWithoutCommentAfter14 = $this->getContributionsWithoutRecentComments($reports);
 
+        $mostActiveUserEmail = DB::table('transaction_logs')
+    ->join('users', 'transaction_logs.user_id', '=', 'users.id')
+    ->where('transaction_logs.user_id', '!=', 1)
+    ->select('users.email', DB::raw('COUNT(transaction_logs.id) as total'))
+    ->groupBy('users.email')
+    ->orderByDesc('total')
+    ->limit(1)
+    ->pluck('users.email')
+    ->first();
+
+
+    $mostUsedTable = DB::table('transaction_logs')
+    ->select('table_name', DB::raw('COUNT(*) as total'))
+    ->groupBy('table_name')
+    ->orderByDesc('total')
+    ->limit(1)
+    ->pluck('table_name')
+    ->first();
+
+    $logs = DB::table('transaction_logs')
+    ->whereNotNull('user_agent')
+    ->pluck('user_agent');
+
+$browserCounts = [
+    'Chrome' => 0,
+    'Firefox' => 0,
+    'Safari' => 0,
+    'Edge' => 0,
+    'Opera' => 0,
+    'Other' => 0,
+];
+
+foreach ($logs as $agent) {
+    $agent = strtolower($agent);
+    if (str_contains($agent, 'chrome') && !str_contains($agent, 'edg') && !str_contains($agent, 'opr')) {
+        $browserCounts['Chrome']++;
+    } elseif (str_contains($agent, 'firefox')) {
+        $browserCounts['Firefox']++;
+    } elseif (str_contains($agent, 'safari') && !str_contains($agent, 'chrome')) {
+        $browserCounts['Safari']++;
+    } elseif (str_contains($agent, 'edg')) {
+        $browserCounts['Edge']++;
+    } elseif (str_contains($agent, 'opr') || str_contains($agent, 'opera')) {
+        $browserCounts['Opera']++;
+    } else {
+        $browserCounts['Other']++;
+    }
+}
+
+arsort($browserCounts);
+$mostUsedBrowser = array_key_first($browserCounts);
+
+
         // Response structure
         $data = [
             'students'                  => $roleCounts['students'],
@@ -212,6 +266,9 @@ class AdminAuthController extends Controller
             'contributionDataByFaculty' => $this->getContributionDataByFaculty(),
             'contributionWithoutComment' => $contributionsWithoutComment,
             'contributionWithoutCommentAfter14' =>  $contributionsWithoutCommentAfter14,
+            'most_active_user' => $mostActiveUserEmail ?? 'no one',
+            'most_used_table' => $mostUsedTable,
+            'most_used_browser' => $mostUsedBrowser,
         ];
 
         return response()->json(new ResponseModel('success', 0, $data));
