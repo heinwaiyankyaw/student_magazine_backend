@@ -315,7 +315,7 @@ $mostUsedBrowser = array_key_first($browserCounts);
 
     public function calculateMonthlyContributions(): array
     {
-        // Get contributions grouped by month with counts
+        // Get contributions grouped by month with counts update
         $contributions = Contribution::selectRaw('MONTH(created_at) as month, COUNT(*) as total')
             ->groupBy('month')
             ->pluck('total', 'month');
